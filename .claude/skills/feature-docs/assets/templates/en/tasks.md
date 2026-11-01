@@ -22,7 +22,7 @@ links: []                # tickets, PRs, designs, related docs
 - [ ] **T1. <Short imperative title>**
   - Covers: <R1, R2 — or one label: `setup`, `verify`, `rollout`>
   - Files: <`path/to/file.ts`, `path/to/file.test.ts`>
-  - Change: <at most two lines, pointing to the Spec section; more means split the task>
+  - Change: <at most two sentences, pointing to the Spec section; more means split the task>
   - Done when: <a check anyone can run: tests that pass, behaviour to see>
   - Depends on: <T-ids, or "—">
 - [ ] **T2. <Short imperative title>**
