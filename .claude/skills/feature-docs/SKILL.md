@@ -1,6 +1,6 @@
 ---
 name: feature-docs
-description: Write, update and review feature documentation as a linked pair of documents — a PRD (why and what) and a technical Spec (how) — stored next to each other in the project, each kept as mirrored English and Russian versions. Use this skill whenever the user wants to describe, plan, document or design a feature, asks for a PRD, product requirements, spec, tech spec, design doc, RFC-style write-up or requirements for something they are about to build, wants to turn notes / a ticket / a conversation into feature docs, or asks to review or update existing PRD/spec files — even if they don't say "PRD" or "spec" explicitly (e.g. "let's write down what this feature should do", "опиши фичу", "напиши ПРД", "сделай спеку", "техническое описание фичи").
+description: Writes, updates and reviews feature documentation as a linked pair of documents — a PRD (why and what) and a technical Spec (how) — stored next to each other in the project, each kept as mirrored English and Russian versions. Use this skill whenever the user wants to describe, plan, document or design a feature, asks for a PRD, product requirements, spec, tech spec, design doc, RFC-style write-up or requirements for something they are about to build, wants to turn notes / a ticket / a conversation into feature docs, or asks to review or update existing PRD/spec files — even if they don't say "PRD" or "spec" explicitly (e.g. "let's write down what this feature should do", "опиши фичу", "напиши ПРД", "сделай спеку", "техническое описание фичи").
 ---
 
 # Feature docs: PRD + Spec
@@ -26,7 +26,11 @@ Every document exists in two languages, English and Russian, and the two version
 
 See *Bilingual mirror* below. This applies to every create, update and fix.
 
-Templates are in `assets/templates/en/` and `assets/templates/ru/` (relative to this skill). A short worked example is in `references/examples/orders-csv-export/`. Read it once if you're unsure about the expected depth and tone.
+Bundled files (paths relative to this skill's directory):
+
+- Templates: `assets/templates/en/prd.md`, `assets/templates/en/spec.md`, and their Russian twins `assets/templates/ru/prd.md`, `assets/templates/ru/spec.md`.
+- Worked example: `references/examples/orders-csv-export/en/prd.md` and `references/examples/orders-csv-export/en/spec.md`, with Russian twins under `.../ru/`. Read it once if you're unsure about the expected depth and tone.
+- Mirror checker: `scripts/check_mirror.py`. Run it, don't read it. It needs only Python 3, no packages.
 
 ## Workflow
 
@@ -66,11 +70,13 @@ If the user doesn't know something, don't fill the gap with a plausible guess �
 
 ### 5. Self-check, then hand over
 
-Run the mirror check on the feature folder and fix every reported mismatch:
+Run the mirror check on the feature folder and fix every reported mismatch. `<skill-dir>` is this skill's directory, and the command runs from the project root:
 
 ```bash
 python3 <skill-dir>/scripts/check_mirror.py docs/features/<feature-slug>
 ```
+
+If `python3` isn't available, tell the user and do the structural comparison by hand, using the list below.
 
 The script catches structural drift: headings, table rows, list items, checkboxes, requirement IDs, code identifiers, links, Mermaid blocks and frontmatter. It can't judge meaning, so also re-read both versions side by side for content that differs. Then go through the checklist below, fix what you can, and finish with a short message: where the files are, what's still open (the Open questions), and the natural next step (e.g. "PRD ready for review → then the Spec").
 

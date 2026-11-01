@@ -223,7 +223,10 @@ def main(argv):
     for e in errors:
         print(e)
     for en, ru in pairs:
-        issues = compare(en, ru)
+        try:
+            issues = compare(en, ru)
+        except (OSError, UnicodeDecodeError) as exc:
+            issues = [f"cannot read pair: {exc}"]
         if issues:
             failed = True
             print(f"FAIL {en} <-> {ru}")
