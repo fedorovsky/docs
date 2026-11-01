@@ -1,0 +1,23 @@
+{
+  "name": "fedorovsky-docs",
+  "owner": {
+    "name": "fedorovsky",
+    "url": "https://github.com/fedorovsky"
+  },
+  "description": "Claude Code skills for writing project documentation",
+  "metadata": {
+    "description": "Claude Code skills for writing project documentation",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "feature-docs",
+      "description": "Feature documentation as a linked PRD + Spec pair, kept as mirrored English and Russian versions",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/feature-docs"
+      ]
+    }
+  ]
+}

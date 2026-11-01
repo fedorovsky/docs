@@ -26,7 +26,7 @@ Every document exists in two languages, English and Russian, and the two version
 
 See *Bilingual mirror* below. This applies to every create, update and fix.
 
-Templates are in `templates/en/` and `templates/ru/` (relative to this skill). A short worked example is in `examples/orders-csv-export/`. Read it once if you're unsure about the expected depth and tone.
+Templates are in `assets/templates/en/` and `assets/templates/ru/` (relative to this skill). A short worked example is in `references/examples/orders-csv-export/`. Read it once if you're unsure about the expected depth and tone.
 
 ## Workflow
 
@@ -61,7 +61,7 @@ If the user doesn't know something, don't fill the gap with a plausible guess â€
 - Fill the frontmatter completely. Use today's date for `created`/`updated`. Default `status: draft`.
 - Sections marked *(optional)* in the template: drop them when they genuinely don't apply. Required sections stay; if one is truly empty, say so in one line (e.g. "No new dependencies.") so reviewers know it was considered.
 - Size the doc to the feature. A small feature's PRD can fit on one screen. Prefer tables and short bullets over prose; nobody reads walls of text in review.
-- Write the English version first, then produce the Russian mirror from the `templates/ru/` template. Don't write the two independently: two separate drafts drift apart in substance.
+- Write the English version first, then produce the Russian mirror from the `assets/templates/ru/` template. Don't write the two independently: two separate drafts drift apart in substance.
 - Link the documents. In both languages PRD `spec:` is `./spec.md` and Spec `prd:` is `./prd.md`, since the sibling sits in the same language folder. Each file's `mirror:` points to its other-language twin: `../ru/prd.md` from `en/`, `../en/prd.md` from `ru/`.
 
 ### 5. Self-check, then hand over
@@ -94,7 +94,7 @@ Change `status` only when the user says so or the situation is unambiguous (e.g.
 
 English is the primary version (`en/`, `lang: en`). Russian is its mirror: the same file name in `ru/`, with `lang: ru`. "Mirror" means a reader of either version learns exactly the same things:
 
-- **Same structure.** Same headings in the same order, same tables with the same rows in the same order, same list items, same checkbox states. Use the headings from the `templates/ru/` templates exactly, so terminology is consistent across all features.
+- **Same structure.** Same headings in the same order, same tables with the same rows in the same order, same list items, same checkbox states. Use the headings from the `assets/templates/ru/` templates exactly, so terminology is consistent across all features.
 - **Same facts.** Every number, date, name, status, priority and decision appears in both. Never add a clarification, example or caveat to only one side; if it's worth saying, say it in both.
 - **Not translated:** requirement IDs (`R1`), priorities (`Must` / `Should` / `Could`), anything in backticks (code, paths, endpoints, events, flags, table and field names), frontmatter keys and values other than `title`, people's names, and product or UI names as they appear in the product and in Figma.
 - **Diagrams.** The same Mermaid diagram on both sides: identical node IDs, participants and arrows. Only the human-readable labels are translated, and identifiers inside labels stay as they are.
