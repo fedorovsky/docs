@@ -25,7 +25,7 @@ links: []                # tickets, PRs, designs, related docs
 
 ### Overview
 
-<The solution at a glance. A diagram (e.g. Mermaid) helps when several components interact.>
+<The solution at a glance. When several components interact, add a Mermaid `sequenceDiagram` or `flowchart`.>
 
 ### Components & changes
 
@@ -33,7 +33,7 @@ links: []                # tickets, PRs, designs, related docs
 
 ### Data model *(optional)*
 
-<New or changed tables, fields, schemas, migrations.>
+<New or changed tables, fields, schemas, migrations. Relations as a Mermaid `erDiagram`, status lifecycles as `stateDiagram-v2`.>
 
 ### API / interfaces *(optional)*
 

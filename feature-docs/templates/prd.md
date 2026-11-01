@@ -31,7 +31,7 @@ links: []                # tickets, designs, research, related docs
 
 ## Users & scenarios
 
-<Who uses this and the key flows. User stories or short step-by-step scenarios.>
+<Who uses this and the key flows. User stories or short step-by-step scenarios. For a flow with branches, add a Mermaid `flowchart` showing what the user sees and does.>
 
 - As a <user>, I want <capability> so that <benefit>.
 

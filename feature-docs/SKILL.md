@@ -73,6 +73,22 @@ Priority uses MoSCoW: **Must** / **Should** / **Could**. Each requirement gets a
 
 Change `status` only when the user says so or the situation is unambiguous (e.g. they say it shipped). An `approved` doc that needs a meaningful change goes back to `review`; mention that to the user rather than silently editing an approved doc.
 
+### Diagrams
+
+Draw every diagram in Mermaid, in a fenced `` ```mermaid `` block inside the doc. No ASCII art, no image files, no links to external drawing tools. Mermaid renders in GitHub, GitLab, Bitbucket, Confluence and most IDEs, and it stays diffable and editable in review alongside the text, so it doesn't go stale the way an exported picture does.
+
+Pick the type by what you're showing:
+
+| Showing | Mermaid type | Typical place |
+|---------|--------------|---------------|
+| User flow / decision logic | `flowchart` | PRD *Users & scenarios* |
+| Interaction between components over time | `sequenceDiagram` | Spec *Overview* |
+| Component / service structure | `flowchart` (with `subgraph`) | Spec *Overview*, *Components & changes* |
+| Tables and relations | `erDiagram` | Spec *Data model* |
+| Lifecycle of an entity (statuses) | `stateDiagram-v2` | Spec *Data model*, *Edge cases* |
+
+Add a diagram when it explains something prose can't do quickly, usually when three or more parties interact or an entity has non-trivial states. Keep each one small, about 15 nodes or messages at most, and split a bigger one by concern. Use the same names as the code and the text, so a reader can map boxes to modules. A PRD diagram shows what the user sees and does, never internal components.
+
 ### Decisions
 
 Record significant design choices in the Spec's *Alternatives & decisions* section: the options considered, what was chosen and why. Six months later this is the part people actually look for. If a decision affects several features, suggest to the user that it may deserve its own ADR — but don't create one unprompted.
@@ -96,4 +112,5 @@ Record significant design choices in the Spec's *Alternatives & decisions* secti
 
 **Both**
 - [ ] Frontmatter complete; `prd`/`spec` links point at each other.
+- [ ] Any diagrams are Mermaid blocks with valid syntax and names that match the text.
 - [ ] Open questions list everything unresolved, with an owner where known.
