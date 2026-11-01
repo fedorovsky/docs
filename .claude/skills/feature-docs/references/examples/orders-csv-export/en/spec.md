@@ -95,4 +95,4 @@ Events `orders_export_started` / `orders_export_finished` (with `row_count`, `du
 
 ## Open questions
 
-- [ ] Should exported files be deleted after 24h or kept 7 days? — Sam Lee (security)
+- [ ] **Q1.** Should exported files be deleted after 24h or kept 7 days? — Sam Lee (security)

@@ -54,8 +54,8 @@ Merchants reconcile orders in spreadsheets or accounting software. Today the onl
 | Metric | Baseline | Target | How measured |
 |--------|----------|--------|--------------|
 | Support tickets tagged "data export" per quarter | 140 | < 30 | Helpdesk tag report |
-| Merchants using export at least once per month | 0 | unknown — see OQ | `orders_export_started` event |
+| Merchants using export at least once per month | 0 | unknown — see Q1 | `orders_export_started` event |
 
 ## Open questions
 
-- [ ] What adoption target is realistic for monthly export usage? — Jane Doe
+- [ ] **Q1.** What adoption target is realistic for monthly export usage? — Jane Doe

@@ -77,4 +77,4 @@ links: []                # tickets, PRs, designs, related docs
 
 ## Open questions
 
-- [ ] <Question> — <who should answer>
+- [ ] **Q1.** <Question> — <who should answer>

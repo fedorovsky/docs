@@ -50,7 +50,7 @@ links: []                # tickets, designs, research, related docs
 
 | Metric | Baseline | Target | How measured |
 |--------|----------|--------|--------------|
-| <metric> | <current value or "unknown — see OQ"> | <target> | <source / dashboard / event> |
+| <metric> | <current value or "unknown — see Q<n>"> | <target> | <source / dashboard / event> |
 
 ## Risks & dependencies *(optional)*
 
@@ -62,4 +62,4 @@ links: []                # tickets, designs, research, related docs
 
 ## Open questions
 
-- [ ] <Question> — <who should answer>
+- [ ] **Q1.** <Question> — <who should answer>

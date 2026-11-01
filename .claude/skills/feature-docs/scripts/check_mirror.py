@@ -11,7 +11,7 @@ PATH is a folder (every EN/RU pair under it is checked, recursively) or a single
 .md file inside an `en/` or `ru/` folder. Markdown files outside language
 folders are ignored. Exits with 1 if any mirror is missing or any pair differs.
 
-Only structure is compared — headings, tables, lists, checkboxes, requirement
+Only structure is compared — headings, tables, lists, checkboxes, R/T/Q
 IDs, inline code, links, fenced blocks and frontmatter — since prose is
 expected to differ by language. Meaning still has to be checked by reading.
 """
@@ -32,7 +32,8 @@ HEADING_RE = re.compile(r"^(#{1,6})\s+(.*)")
 LIST_RE = re.compile(r"^\s*(?:[-*+]|\d+\.)\s+")
 CHECKBOX_RE = re.compile(r"^\s*[-*+]\s+\[([ xX])\]")
 TABLE_SEP_RE = re.compile(r"^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$")
-REQ_ID_RE = re.compile(r"\bR\d+\b")
+# Requirement (R1), task (T1) and open question (Q1) IDs.
+REQ_ID_RE = re.compile(r"\b[RTQ]\d+\b")
 CODE_RE = re.compile(r"(`+)(.+?)\1")
 LINK_RE = re.compile(r"\]\(([^)\s]+)")
 
@@ -180,7 +181,7 @@ def compare(en: Path, ru: Path):
 
     # Whole-document invariants
     if a["req_ids"] != b["req_ids"]:
-        issues.append(f"requirement IDs: only EN {sorted(a['req_ids'] - b['req_ids'])}, only RU {sorted(b['req_ids'] - a['req_ids'])}")
+        issues.append(f"IDs (R/T/Q): only EN {sorted(a['req_ids'] - b['req_ids'])}, only RU {sorted(b['req_ids'] - a['req_ids'])}")
     if a["code"] != b["code"]:
         only_en = sorted((a["code"] - b["code"]).elements())
         only_ru = sorted((b["code"] - a["code"]).elements())
