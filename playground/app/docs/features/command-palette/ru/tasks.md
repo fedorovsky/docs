@@ -1,6 +1,6 @@
 ---
 type: tasks
-title: Command palette (Cmd+K)
+title: Командная палитра (Cmd+K)
 feature: command-palette
 lang: ru
 mirror: ../en/tasks.md
@@ -13,89 +13,82 @@ spec: ./spec.md
 links: [ADMIN-231]
 ---
 
-# Command palette (Cmd+K) — Задачи
+# Командная палитра (Cmd+K) — Задачи
 
-Реализуют клиентскую командную палитру из [спецификации](./spec.md); до раскатки всё закрыто переменной сборки `VITE_FEATURE_COMMAND_PALETTE`.
+Реализуют командную палитру из [спецификации](./spec.md); до раскатки всё за флагом `VITE_FF_COMMAND_PALETTE`. Спецификация в статусе `draft`, поэтому задачи могут меняться вместе с ней.
 
 ## Задачи
 
-- [ ] **T1. Настроить Vitest с jsdom**
+- [ ] **T1. Добавить фича-флаг**
   - Покрывает: `setup`
-  - Файлы: `package.json`, `vitest.config.ts`, `src/components/ui/Dialog.test.tsx`
-  - Что сделать: добавить `jsdom` в dev-зависимости и `vitest.config.ts` с окружением `jsdom` (раздел «План тестирования» спецификации)
-  - Готово, когда: `npx vitest run` проходит smoke-тест, который рендерит открытый `Dialog` и находит его заголовок
+  - Файлы: `src/flags.ts`, конфиг окружений для `VITE_FF_COMMAND_PALETTE`
+  - Что сделать: `isEnabled("command_palette")`, читающий `import.meta.env.VITE_FF_COMMAND_PALETTE` (раздел «Компоненты и изменения»); по умолчанию выключен
+  - Готово, когда: `npm run build` проходит, и `isEnabled("command_palette")` возвращает `false` без переменной
   - Зависит от: —
-- [ ] **T2. Добавить в `useHotkey` опцию `allowInInputs`**
+- [ ] **T2. Научить `useHotkey` срабатывать внутри текстовых полей**
   - Покрывает: R1
   - Файлы: `src/hooks/useHotkey.ts`, `src/hooks/useHotkey.test.ts`
-  - Что сделать: новая опция `allowInInputs` (по умолчанию `false`), которая отключает проверку фокуса в поле ввода (разделы «Компоненты и изменения», «API / интерфейсы»)
-  - Готово, когда: проходят тесты: с `{ meta: true, allowInInputs: true }` обработчик срабатывает на Cmd+K и Ctrl+K, в том числе из `input` в фокусе; `?` без опции по-прежнему игнорируется в `input`
-  - Зависит от: T1
-- [ ] **T3. Открывать и закрывать палитру из хедера, за флагом**
-  - Покрывает: R1
-  - Файлы: `src/components/command-palette/CommandPalette.tsx`, `src/components/layout/Header.tsx`, `src/components/layout/Header.test.tsx`
-  - Что сделать: каркас `CommandPalette` (`Dialog` + поле ввода, временные тексты); `Header` регистрирует Cmd/Ctrl+K и хранит `open`, только если включён `VITE_FEATURE_COMMAND_PALETTE` (разделы «Компоненты и изменения», «Раскатка и откат»)
-  - Готово, когда: проходят тесты: при включённом флаге Cmd+K и Ctrl+K открывают палитру с фокусом в её поле ввода, в том числе из поиска в хедере; Esc закрывает её; Cmd+K при открытой палитре оставляет одно окно; при открытом `ShortcutsHelp` сочетание игнорируется; при выключенном флаге ничего не открывается
-  - Зависит от: T2
-- [ ] **T4. Добавить `useSectionCommands`**
-  - Покрывает: R2, R3
-  - Файлы: `src/components/command-palette/useSectionCommands.ts`, `src/components/command-palette/useSectionCommands.test.ts`
-  - Что сделать: фильтровать `routes` по `inNav && has(permission)` и сопоставлять `title` по подстроке без учёта регистра; ничего не возвращать, пока нет `loaded` (раздел «Компоненты и изменения»)
-  - Готово, когда: проходят тесты: «ref» возвращает Refunds при `refunds:manage` и ничего без него; страницы деталей и `/search` не попадают никогда; пока `loaded` равно `false`, результат пустой
-  - Зависит от: T1
-- [ ] **T5. Показывать разделы в палитре и открывать выбранный**
-  - Покрывает: R2, R3
-  - Файлы: `src/components/command-palette/CommandPalette.tsx`, `src/components/command-palette/CommandPalette.test.tsx`
-  - Что сделать: группа разделов из `useSectionCommands`; ↑/↓, Enter или клик вызывают `navigate(path)` и закрывают палитру; ARIA combobox + listbox; Enter игнорируется при `e.isComposing` (разделы «Компоненты и изменения», «Граничные случаи»)
-  - Готово, когда: проходят тесты: ввод «ref», затем ↓ + Enter или клик открывают `/refunds` и закрывают палитру; `aria-activedescendant` следует за активным пунктом; Enter во время IME-ввода ничего не выбирает
-  - Зависит от: T3, T4
-- [ ] **T6. Добавить `useEntitySearch`**
-  - Покрывает: R4
-  - Файлы: `src/components/command-palette/useEntitySearch.ts`, `src/components/command-palette/useEntitySearch.test.ts`
-  - Что сделать: TanStack Query поверх `searchEntities(q, 5, signal)`, debounce 150 мс, включается от 2 символов; отбрасывать результаты без `orders:view` / `customers:view` (раздел «Компоненты и изменения», допущение PRD Q4)
-  - Готово, когда: проходят тесты с замоканным `searchEntities`: при длине меньше 2 символов вызова нет; после паузы 150 мс ровно один вызов; `signal` устаревшего запроса отменяется; без каждого из прав соответствующие результаты отбрасываются
-  - Зависит от: T1
-- [ ] **T7. Показывать заказы и клиентов в палитре**
-  - Покрывает: R4
-  - Файлы: `src/components/command-palette/CommandPalette.tsx`, `src/components/command-palette/CommandPalette.test.tsx`
-  - Что сделать: группы заказов и клиентов из `useEntitySearch`; выбор ведёт на `/orders/:orderId` или `/customers/:customerId`; состояния ошибки и пустого результата с временными текстами (раздел «Граничные случаи»)
-  - Готово, когда: проходят тесты: номер заказа показывает заказ, и Enter открывает `/orders/<id>` без захода на `/search`; то же для клиента, найденного по номеру, имени и email; при ошибке поиска разделы остаются и показывается состояние ошибки; без совпадений показывается пустое состояние
-  - Зависит от: T5, T6
-- [ ] **T8. Сохранять недавно открытые заказы и клиентов**
+  - Что сделать: добавить опцию `inInputs`, которая пропускает проверку на `input` / `textarea` / `contenteditable` (раздел «Компоненты и изменения»)
+  - Готово, когда: тесты показывают, что обработчик срабатывает при фокусе в поле ввода с `inInputs: true` и не срабатывает без неё; `?` по-прежнему игнорируется внутри полей
+  - Зависит от: —
+- [ ] **T3. Добавить `matchSections`**
+  - Покрывает: R2, R4
+  - Файлы: `src/components/palette/matchSections.ts`, `src/components/palette/matchSections.test.ts`
+  - Что сделать: чистая функция по `routes` с `inNav && has(permission)` и поиском по `title` без учёта регистра (раздел «Компоненты и изменения»)
+  - Готово, когда: тесты: «ref» возвращает «Refunds»; роут без прав исключён при любом запросе; роуты с `inNav: false` исключены; пустой запрос возвращает все разрешённые
+  - Зависит от: —
+- [ ] **T4. Добавить `useRecentItems`**
   - Покрывает: R5
-  - Файлы: `src/auth/usePermissions.ts`, `src/components/command-palette/recentItems.ts`, `src/components/command-palette/recentItems.test.ts`, `src/pages/OrderDetailsPage.tsx`, `src/pages/CustomerDetailsPage.tsx`
-  - Что сделать: `usePermissions()` дополнительно возвращает `userId`; функции `recentItems` и `useRecordRecent` поверх `acme-admin:recent:<userId>`, их вызывают при монтировании обе страницы деталей (раздел «Модель данных», допущения PRD Q5, PRD Q6)
-  - Готово, когда: проходят тесты: новые первыми, дедупликация по type + id, не больше 5, отдельные ключи для каждого пользователя, невалидный JSON сбрасывает значение; монтирование страницы деталей записывает её id
-  - Зависит от: T1
-- [ ] **T9. Показывать недавние при пустом поле ввода**
+  - Файлы: `src/components/palette/useRecentItems.ts`, `src/components/palette/useRecentItems.test.ts`
+  - Что сделать: список в `localStorage` по user id с upsert в начало, сохранением label, лимитом 10, фильтром по правам и `useRecordVisits()` (разделы «Компоненты и изменения», «Модель данных»)
+  - Готово, когда: тесты покрывают порядок при upsert, сохранение label, лимит, ключ по пользователю, повреждённый JSON → пустой список, фильтрацию через `has()`
+  - Зависит от: —
+- [ ] **T5. Собрать палитру с разделами и навигацией с клавиатуры**
+  - Покрывает: R1, R2, R4, R6
+  - Файлы: `src/components/palette/CommandPalette.tsx`, `src/components/palette/CommandPalette.test.tsx`, `src/components/layout/AppLayout.tsx`
+  - Что сделать: диалог Radix с полем ввода, группа "Sections" из `matchSections`, Up / Down / Enter, хоткей `{ meta: true, inInputs: true }`; монтируется в `AppLayout` при включённом флаге (раздел «Компоненты и изменения»)
+  - Готово, когда: при включённом флаге Cmd+K и Ctrl+K открывают палитру, в том числе из поиска в хедере; «ref» и Enter открывают `/refunds`; без `refunds:manage` «Refunds» отсутствует; при выключенном флаге ничего не рендерится; тесты проходят
+  - Зависит от: T1, T2, T3
+- [ ] **T6. Добавить в палитру поиск заказов и клиентов**
+  - Покрывает: R3, R4
+  - Файлы: `src/components/palette/CommandPalette.tsx`, `src/components/palette/CommandPalette.test.tsx`
+  - Что сделать: дебаунснутый `searchEntities(q, 10)` начиная с 2 символов, группы "Orders" / "Customers" с фильтром по правам, состояния "Searching…", "Search is unavailable" и "No results for “<query>”" (раздел «Граничные случаи»)
+  - Готово, когда: тесты с замоканным `searchEntities`: результаты сгруппированы, Enter открывает `/orders/<id>`; запроса нет при меньше чем 2 символах или без обоих прав на просмотр; состояние ошибки показывается
+  - Зависит от: T5
+- [ ] **T7. Показывать и записывать недавние элементы**
   - Покрывает: R5
-  - Файлы: `src/components/command-palette/CommandPalette.tsx`, `src/components/command-palette/CommandPalette.test.tsx`
-  - Что сделать: группа недавних с сохранёнными id при пустом поле; скрывать пункты, на которые у агента больше нет прав; выбор открывает страницу (разделы «Модель данных», «Граничные случаи»)
-  - Готово, когда: проходят тесты: после открытия заказа A, а затем клиента B палитра показывает B, A; выбор пункта открывает его страницу; пункт без прав скрыт; если `localStorage` бросает ошибку, остальная палитра работает
-  - Зависит от: T7, T8
-- [ ] **T10. Отправлять события аналитики палитры**
+  - Файлы: `src/components/palette/CommandPalette.tsx`, `src/components/palette/CommandPalette.test.tsx`, `src/pages/SearchPage.tsx`
+  - Что сделать: группа "Recent" при пустом запросе; `record()` при выборе в палитре и при клике по результату в `SearchPage`; `useRecordVisits()` в палитре (раздел «Компоненты и изменения»)
+  - Готово, когда: открыть два заказа, нажать Cmd+K: оба в списке, последний первым, выбор одного открывает его; тесты проходят
+  - Зависит от: T4, T6
+- [ ] **T8. Добавить события аналитики палитры**
   - Покрывает: `setup`
-  - Файлы: `src/analytics/track.ts`, `src/components/layout/Header.tsx`, `src/components/command-palette/CommandPalette.tsx`, `src/components/command-palette/CommandPalette.test.tsx`
-  - Что сделать: добавить `command_palette_opened` / `command_palette_item_selected` в `EventName` и отправлять их; для заказов и клиентов отправлять `search_result_opened` с `source: "command_palette"` (раздел «API / интерфейсы»)
-  - Готово, когда: проходят тесты с замоканным `track`: открытие отправляет `{ trigger: "hotkey" }`; выбор заказа отправляет `command_palette_item_selected` с `kind`, `from_recent`, `query_length`, `ms_since_open` и `search_result_opened` с `source: "command_palette"`
-  - Зависит от: T9
-- [ ] **T11. Применить тексты из дизайна и пункт в справке по сочетаниям**
-  - Покрывает: R1, R2, R4, R5
-  - Файлы: `src/components/command-palette/CommandPalette.tsx`, `src/components/layout/ShortcutsHelp.tsx`, `src/components/command-palette/CommandPalette.test.tsx`
-  - Что сделать: заменить временные тексты текстами из дизайна; добавить пункт Cmd/Ctrl+K в `SHORTCUTS` (раздел «Компоненты и изменения»)
-  - Готово, когда: палитра и справка по сочетаниям совпадают с макетами; `npx vitest run` проходит
-  - Зависит от: T10
-  - Заблокировано: PRD Q12
-- [ ] **T12. Включить на стейджинге и проверить на macOS и Windows**
+  - Файлы: `src/analytics/track.ts`, `src/components/palette/CommandPalette.tsx`, `src/components/palette/CommandPalette.test.tsx`
+  - Что сделать: добавить `command_palette_opened` и `command_palette_item_opened` со свойствами из раздела «API / интерфейсы»
+  - Готово, когда: тест проверяет оба события с `kind`, `position`, `query_length`, `duration_ms`; оба видны в отладчике аналитики локально
+  - Зависит от: T7
+- [ ] **T9. Добавить шорткат в справку по клавиатурным сокращениям**
+  - Покрывает: R7
+  - Файлы: `src/components/layout/ShortcutsHelp.tsx`
+  - Что сделать: добавить запись «Cmd+K / Ctrl+K» — «Open command palette» при включённом флаге (раздел «Компоненты и изменения»)
+  - Готово, когда: при включённом флаге «?» показывает запись; при выключенном её нет
+  - Зависит от: T1
+- [ ] **T10. Применить финальный дизайн и тексты**
+  - Покрывает: R2, R3, R5
+  - Файлы: `src/components/palette/CommandPalette.tsx`, файл стилей приложения для классов `palette-*`
+  - Что сделать: заменить временную раскладку и тексты на макеты (раздел «Компоненты и изменения», стили)
+  - Готово, когда: палитра на стейджинге соответствует макетам, и все тесты палитры по-прежнему проходят
+  - Зависит от: T7, T9
+  - Заблокировано: PRD Q4
+- [ ] **T11. Проверить на стейджинге**
   - Покрывает: `verify`
-  - Файлы: окружение сборки стейджинга (конфиг деплоя): `VITE_FEATURE_COMMAND_PALETTE`
-  - Что сделать: собрать стейджинг с включённой переменной и пройти ручные проверки из раздела «План тестирования»
-  - Готово, когда: на macOS и Windows в браузерах, которыми пользуется поддержка, проходят критерии приёмки R1–R5 из PRD, а собственное Cmd+K / Ctrl+K браузера не срабатывает
-  - Зависит от: T11
-- [ ] **T13. Раскатить в прод**
+  - Файлы: конфиг стейджинга для `VITE_FF_COMMAND_PALETTE`
+  - Что сделать: пройти ручные проверки из раздела «План тестирования» с двумя аккаунтами с разными правами, на macOS и Windows
+  - Готово, когда: критерии приёмки R1–R7 проходят на стейджинге для обоих аккаунтов
+  - Зависит от: T8, T9
+- [ ] **T12. Раскатить**
   - Покрывает: `rollout`
-  - Файлы: окружение сборки прода (конфиг деплоя): `VITE_FEATURE_COMMAND_PALETTE`
-  - Что сделать: собрать и задеплоить прод с включённой переменной для всех; откат — пересборка с выключенной (раздел «Раскатка и откат»)
-  - Готово, когда: агенты в проде открывают палитру, и события `command_palette_opened` приходят с прода
-  - Зависит от: T12
-  - Заблокировано: Spec Q3, PRD Q2
+  - Файлы: конфиг продакшена для `VITE_FF_COMMAND_PALETTE`
+  - Что сделать: включить флаг в продакшене (раздел «Раскатка и откат»)
+  - Готово, когда: флаг включён в продакшене неделю, и события `command_palette_item_opened` поступают
+  - Зависит от: T10, T11

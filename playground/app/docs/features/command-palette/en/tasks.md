@@ -15,87 +15,80 @@ links: [ADMIN-231]
 
 # Command palette (Cmd+K) — Tasks
 
-Delivers the client-only command palette from the [Spec](./spec.md), behind the build-time variable `VITE_FEATURE_COMMAND_PALETTE` until rollout.
+Delivers the command palette from the [Spec](./spec.md), behind the `VITE_FF_COMMAND_PALETTE` flag until rollout. The Spec is `draft`, so these tasks may change with it.
 
 ## Tasks
 
-- [ ] **T1. Set up Vitest with jsdom**
+- [ ] **T1. Add the feature flag**
   - Covers: `setup`
-  - Files: `package.json`, `vitest.config.ts`, `src/components/ui/Dialog.test.tsx`
-  - Change: add `jsdom` as a dev dependency and `vitest.config.ts` with the `jsdom` environment (Spec *Testing plan*)
-  - Done when: `npx vitest run` passes a smoke test that renders `Dialog` open and finds its title
+  - Files: `src/flags.ts`, environment config for `VITE_FF_COMMAND_PALETTE`
+  - Change: `isEnabled("command_palette")` reading `import.meta.env.VITE_FF_COMMAND_PALETTE` (Spec *Components & changes*); off by default
+  - Done when: `npm run build` passes and `isEnabled("command_palette")` is `false` without the variable
   - Depends on: —
-- [ ] **T2. Add the `allowInInputs` option to `useHotkey`**
+- [ ] **T2. Let `useHotkey` fire inside text fields**
   - Covers: R1
   - Files: `src/hooks/useHotkey.ts`, `src/hooks/useHotkey.test.ts`
-  - Change: new option `allowInInputs` (default `false`) that skips the focused-input check (Spec *Components & changes*, *API / interfaces*)
-  - Done when: tests pass: with `{ meta: true, allowInInputs: true }` the handler fires on Cmd+K and Ctrl+K, also from a focused `input`; `?` without the option is still ignored in an `input`
-  - Depends on: T1
-- [ ] **T3. Open and close the palette from the header, behind the flag**
-  - Covers: R1
-  - Files: `src/components/command-palette/CommandPalette.tsx`, `src/components/layout/Header.tsx`, `src/components/layout/Header.test.tsx`
-  - Change: `CommandPalette` shell (`Dialog` + input, provisional texts); `Header` registers Cmd/Ctrl+K and owns `open` only when `VITE_FEATURE_COMMAND_PALETTE` is on (Spec *Components & changes*, *Rollout & rollback*)
-  - Done when: tests pass: with the flag on, Cmd+K and Ctrl+K open the palette with focus in its input, also from the header search; Esc closes it; Cmd+K while open keeps one dialog; ignored while `ShortcutsHelp` is open; with the flag off nothing opens
-  - Depends on: T2
-- [ ] **T4. Add `useSectionCommands`**
-  - Covers: R2, R3
-  - Files: `src/components/command-palette/useSectionCommands.ts`, `src/components/command-palette/useSectionCommands.test.ts`
-  - Change: filter `routes` by `inNav && has(permission)` and match `title` by case-insensitive substring; return nothing until `loaded` (Spec *Components & changes*)
-  - Done when: tests pass: "ref" returns Refunds with `refunds:manage` and nothing without it; detail pages and `/search` never appear; empty result while `loaded` is `false`
-  - Depends on: T1
-- [ ] **T5. List sections in the palette and open the selected one**
-  - Covers: R2, R3
-  - Files: `src/components/command-palette/CommandPalette.tsx`, `src/components/command-palette/CommandPalette.test.tsx`
-  - Change: Sections group from `useSectionCommands`; ↑/↓, Enter or click calls `navigate(path)` and closes; combobox + listbox ARIA; Enter ignored while `e.isComposing` (Spec *Components & changes*, *Edge cases*)
-  - Done when: tests pass: typing "ref" then ↓ + Enter, or a click, opens `/refunds` and closes the palette; `aria-activedescendant` follows the active item; Enter during composition selects nothing
-  - Depends on: T3, T4
-- [ ] **T6. Add `useEntitySearch`**
-  - Covers: R4
-  - Files: `src/components/command-palette/useEntitySearch.ts`, `src/components/command-palette/useEntitySearch.test.ts`
-  - Change: TanStack Query over `searchEntities(q, 5, signal)`, 150 ms debounce, enabled from 2 characters; drop hits without `orders:view` / `customers:view` (Spec *Components & changes*, assumption PRD Q4)
-  - Done when: tests with `searchEntities` mocked pass: no call below 2 characters; one call after a 150 ms pause; the outdated request's `signal` is aborted; hits dropped without each permission
-  - Depends on: T1
-- [ ] **T7. Show orders and customers in the palette**
-  - Covers: R4
-  - Files: `src/components/command-palette/CommandPalette.tsx`, `src/components/command-palette/CommandPalette.test.tsx`
-  - Change: Orders and Customers groups from `useEntitySearch`; selecting navigates to `/orders/:orderId` or `/customers/:customerId`; error and empty states with provisional texts (Spec *Edge cases*)
-  - Done when: tests pass: an order number shows the order and Enter opens `/orders/<id>` without visiting `/search`; same for a customer found by number, name and email; a failed search still shows sections plus an error state; no matches shows the empty state
-  - Depends on: T5, T6
-- [ ] **T8. Store recently opened orders and customers**
+  - Change: add the `inInputs` option that skips the `input` / `textarea` / `contenteditable` guard (Spec *Components & changes*)
+  - Done when: tests show the handler fires with an input focused when `inInputs: true` and not otherwise; `?` still ignored inside inputs
+  - Depends on: —
+- [ ] **T3. Add `matchSections`**
+  - Covers: R2, R4
+  - Files: `src/components/palette/matchSections.ts`, `src/components/palette/matchSections.test.ts`
+  - Change: pure function over `routes` with `inNav && has(permission)` and a case-insensitive `title` match (Spec *Components & changes*)
+  - Done when: tests: "ref" returns "Refunds"; a route without permission is excluded for any query; `inNav: false` routes excluded; empty query returns all permitted
+  - Depends on: —
+- [ ] **T4. Add `useRecentItems`**
   - Covers: R5
-  - Files: `src/auth/usePermissions.ts`, `src/components/command-palette/recentItems.ts`, `src/components/command-palette/recentItems.test.ts`, `src/pages/OrderDetailsPage.tsx`, `src/pages/CustomerDetailsPage.tsx`
-  - Change: `usePermissions()` also returns `userId`; `recentItems` helpers and `useRecordRecent` over `acme-admin:recent:<userId>`, called on mount by both detail pages (Spec *Data model*, assumptions PRD Q5, PRD Q6)
-  - Done when: tests pass: newest first, deduplicated by type + id, at most 5, separate keys per user, invalid JSON resets the value; mounting a detail page records its id
-  - Depends on: T1
-- [ ] **T9. Show recent items when the input is empty**
+  - Files: `src/components/palette/useRecentItems.ts`, `src/components/palette/useRecentItems.test.ts`
+  - Change: `localStorage` list per user id with upsert-to-front, label keep, cap of 10, permission filter, and `useRecordVisits()` (Spec *Components & changes*, *Data model*)
+  - Done when: tests cover upsert order, kept label, cap, per-user key, corrupt JSON → empty list, filtering by `has()`
+  - Depends on: —
+- [ ] **T5. Build the palette with sections and keyboard navigation**
+  - Covers: R1, R2, R4, R6
+  - Files: `src/components/palette/CommandPalette.tsx`, `src/components/palette/CommandPalette.test.tsx`, `src/components/layout/AppLayout.tsx`
+  - Change: Radix dialog with input, "Sections" group from `matchSections`, Up / Down / Enter, hotkey `{ meta: true, inInputs: true }`; mounted in `AppLayout` when the flag is on (Spec *Components & changes*)
+  - Done when: with the flag on, Cmd+K and Ctrl+K open it, also from the header search; "ref" then Enter opens `/refunds`; without `refunds:manage` "Refunds" is absent; with the flag off nothing renders; tests pass
+  - Depends on: T1, T2, T3
+- [ ] **T6. Add order and customer search to the palette**
+  - Covers: R3, R4
+  - Files: `src/components/palette/CommandPalette.tsx`, `src/components/palette/CommandPalette.test.tsx`
+  - Change: debounced `searchEntities(q, 10)` from 2 characters, "Orders" / "Customers" groups filtered by permission, "Searching…", "Search is unavailable" and "No results for “<query>”" states (Spec *Edge cases*)
+  - Done when: tests with `searchEntities` mocked: hits grouped and Enter opens `/orders/<id>`; no request below 2 characters or without both view permissions; error state shown
+  - Depends on: T5
+- [ ] **T7. Show and record recent items**
   - Covers: R5
-  - Files: `src/components/command-palette/CommandPalette.tsx`, `src/components/command-palette/CommandPalette.test.tsx`
-  - Change: Recent group with the stored ids when the input is empty; hide items the agent no longer has permission for; selecting opens the page (Spec *Data model*, *Edge cases*)
-  - Done when: tests pass: after opening order A then customer B the palette shows B, A; choosing one opens its page; an item without permission is hidden; a throwing `localStorage` leaves the rest of the palette working
-  - Depends on: T7, T8
-- [ ] **T10. Send the palette analytics events**
+  - Files: `src/components/palette/CommandPalette.tsx`, `src/components/palette/CommandPalette.test.tsx`, `src/pages/SearchPage.tsx`
+  - Change: "Recent" group on an empty query; `record()` on palette selection and on `SearchPage` result click; `useRecordVisits()` in the palette (Spec *Components & changes*)
+  - Done when: open two orders, press Cmd+K: both listed, latest first, selecting one opens it; tests pass
+  - Depends on: T4, T6
+- [ ] **T8. Add the palette analytics events**
   - Covers: `setup`
-  - Files: `src/analytics/track.ts`, `src/components/layout/Header.tsx`, `src/components/command-palette/CommandPalette.tsx`, `src/components/command-palette/CommandPalette.test.tsx`
-  - Change: add `command_palette_opened` / `command_palette_item_selected` to `EventName` and send them; send `search_result_opened` with `source: "command_palette"` for orders and customers (Spec *API / interfaces*)
-  - Done when: tests with `track` mocked pass: opening sends `{ trigger: "hotkey" }`; selecting an order sends `command_palette_item_selected` with `kind`, `from_recent`, `query_length`, `ms_since_open` and `search_result_opened` with `source: "command_palette"`
-  - Depends on: T9
-- [ ] **T11. Apply the design's texts and the shortcuts help entry**
-  - Covers: R1, R2, R4, R5
-  - Files: `src/components/command-palette/CommandPalette.tsx`, `src/components/layout/ShortcutsHelp.tsx`, `src/components/command-palette/CommandPalette.test.tsx`
-  - Change: replace the provisional texts with the design's; add the Cmd/Ctrl+K entry to `SHORTCUTS` (Spec *Components & changes*)
-  - Done when: the palette and the shortcuts help match the mockups; `npx vitest run` passes
-  - Depends on: T10
-  - Blocked by: PRD Q12
-- [ ] **T12. Enable on staging and check on macOS and Windows**
+  - Files: `src/analytics/track.ts`, `src/components/palette/CommandPalette.tsx`, `src/components/palette/CommandPalette.test.tsx`
+  - Change: add `command_palette_opened` and `command_palette_item_opened` with the properties from Spec *API / interfaces*
+  - Done when: a test asserts both events with `kind`, `position`, `query_length`, `duration_ms`; both appear in the analytics debugger locally
+  - Depends on: T7
+- [ ] **T9. List the shortcut in the keyboard shortcuts help**
+  - Covers: R7
+  - Files: `src/components/layout/ShortcutsHelp.tsx`
+  - Change: add the "Cmd+K / Ctrl+K" — "Open command palette" entry when the flag is on (Spec *Components & changes*)
+  - Done when: with the flag on, "?" shows the entry; with the flag off it is absent
+  - Depends on: T1
+- [ ] **T10. Apply the final design and texts**
+  - Covers: R2, R3, R5
+  - Files: `src/components/palette/CommandPalette.tsx`, the app stylesheet for `palette-*` classes
+  - Change: replace the provisional layout and texts with the mockups (Spec *Components & changes*, styles)
+  - Done when: the palette matches the mockups on staging and all palette tests still pass
+  - Depends on: T7, T9
+  - Blocked by: PRD Q4
+- [ ] **T11. Verify on staging**
   - Covers: `verify`
-  - Files: staging build environment (deploy config): `VITE_FEATURE_COMMAND_PALETTE`
-  - Change: build staging with the variable on and run the manual checks from Spec *Testing plan*
-  - Done when: on macOS and Windows, in the browsers the support team uses, the PRD acceptance criteria for R1–R5 pass and the browser's own Cmd+K / Ctrl+K doesn't fire
-  - Depends on: T11
-- [ ] **T13. Roll out to production**
+  - Files: staging environment config for `VITE_FF_COMMAND_PALETTE`
+  - Change: run the manual checks from Spec *Testing plan* with two accounts of different permissions, on macOS and Windows
+  - Done when: R1–R7 acceptance criteria pass on staging for both accounts
+  - Depends on: T8, T9
+- [ ] **T12. Roll out**
   - Covers: `rollout`
-  - Files: production build environment (deploy config): `VITE_FEATURE_COMMAND_PALETTE`
-  - Change: build and deploy production with the variable on for everyone; rollback is a rebuild with it off (Spec *Rollout & rollback*)
-  - Done when: agents in production open the palette and `command_palette_opened` events arrive from production
-  - Depends on: T12
-  - Blocked by: Spec Q3, PRD Q2
+  - Files: production environment config for `VITE_FF_COMMAND_PALETTE`
+  - Change: turn the flag on in production (Spec *Rollout & rollback*)
+  - Done when: the flag is on in production for a week and `command_palette_item_opened` events are arriving
+  - Depends on: T10, T11

@@ -1,6 +1,6 @@
 ---
 type: spec
-title: Command palette (Cmd+K)
+title: Командная палитра (Cmd+K)
 feature: command-palette
 lang: ru
 mirror: ../en/spec.md
@@ -13,23 +13,23 @@ prd: ./prd.md
 links: [ADMIN-231]
 ---
 
-# Command palette (Cmd+K) — Спецификация
+# Командная палитра (Cmd+K) — Спецификация
 
 ## Кратко
 
-Фича целиком на клиенте: глобальный хоткей Cmd/Ctrl+K открывает модальное окно на основе существующего `Dialog`. Разделы берутся из конфига `routes` с фильтрацией через `usePermissions()`, заказы и клиенты — из существующего `GET /api/search`, а недавно открытые пункты хранятся в `localStorage` отдельно для каждого пользователя. Бэкенд не меняется. Зачем это нужно, описано в [PRD](./prd.md).
+Чисто фронтендовая фича: диалог `CommandPalette`, смонтированный в `AppLayout` и открываемый глобальным хоткеем Cmd+K / Ctrl+K, показывает разделы из существующей таблицы роутов (отфильтрованные по правам агента), заказы и клиентов из существующего эндпоинта `GET /api/search` и недавно открытые элементы, хранящиеся в `localStorage`. Бэкенд не меняется. Закрыто build-time фича-флагом. Зачем это нужно, описано в [PRD](./prd.md).
 
 ## Контекст и текущее состояние
 
-- `src/hooks/useHotkey.ts` регистрирует глобальные сочетания клавиш. Он игнорирует нажатия, пока фокус в `input`, `textarea` или `[contenteditable=true]`, а опция `meta` принимает либо `metaKey`, либо `ctrlKey`. Используется только для `?` (справка по сочетаниям) в `src/components/layout/Header.tsx`.
-- В `src/components/layout/Header.tsx` находится поиск в хедере: при отправке (минимум 2 символа) он шлёт `header_search_submitted` и переходит на `/search?q=…`.
-- `src/pages/SearchPage.tsx` вызывает `searchEntities(q, 50, signal)` и рендерит ссылки на `/orders/:orderId` и `/customers/:customerId`, отправляя `search_result_opened` с `{ type, source: "search_page" }`.
-- `src/api/search.ts`: `GET /api/search?q&limit` ищет заказы по id и клиентов по id, имени и email; p95 ≈ 350 мс, минимальная длина запроса 2. Возвращает `{ orders: OrderHit[], customers: CustomerHit[] }`.
-- `src/routes.tsx`: у каждого маршрута есть `title`, `permission` и `inNav`. `src/components/layout/Sidebar.tsx` показывает маршруты с `inNav && has(permission)` — это ровно тот набор «разделов», который агент может видеть сейчас.
-- `src/auth/usePermissions.ts` загружает `GET /api/me` и отдаёт `has()` и `loaded`; `id` пользователя загружается, но наружу не отдаётся.
-- `src/components/ui/Dialog.tsx` — обёртка над Radix Dialog (focus trap, Esc, блокировка скролла), всегда рендерит видимый `title`.
-- `src/analytics/track.ts`: `track()` принимает только имена из закрытого union-типа `EventName`.
-- Ограничения: `src/App.tsx` не проверяет права на маршруты, поэтому скрывать разделы палитра должна сама. Ничто в `src/` не фильтрует результаты поиска по `orders:view` / `customers:view`; для `/search` нужен только `dashboard:view`. Механизма фича-флагов и постоянного хранилища на клиенте в приложении сейчас нет.
+- Глобальный поиск сегодня: `src/components/layout/Header.tsx` рендерит поле поиска; при отправке трекает `header_search_submitted` и переходит на `/search?q=…`. `src/pages/SearchPage.tsx` вызывает `searchEntities(q, 50)` через TanStack Query и рендерит ссылки на `/orders/:id` и `/customers/:id`, трекая `search_result_opened` с `source: "search_page"`.
+- API поиска: `src/api/search.ts` → `GET /api/search?q=<query>&limit=<n>` возвращает `{ orders: OrderHit[], customers: CustomerHit[] }`; заказы ищутся по id, клиенты по id, имени и email; минимальная длина запроса 2; p95 ≈ 350 мс. Запросы принимают `AbortSignal`. Эндпоинта для разделов нет: разделы — это таблица роутов на фронтенде.
+- Разделы: `src/routes.tsx` экспортирует `routes: AppRoute[]` с `path`, `title`, `permission`, `inNav`. `src/components/layout/Sidebar.tsx` показывает `routes.filter((r) => r.inNav && has(r.permission))`; тот же фильтр даёт список разделов для палитры.
+- Права: `src/auth/usePermissions.ts` загружает `GET /api/me` (`id`, `name`, `permissions`) и отдаёт `has(p)` и `loaded`. Фронтенд только прячет навигацию; в `src/App.tsx` роуты ничем не защищены, так что доступ к данным обеспечивает бэкенд.
+- Хоткеи: `src/hooks/useHotkey.ts` вешает глобальный слушатель `keydown` с необязательным `{ meta: true }` (принимает `metaKey` или `ctrlKey`), но игнорирует события, цель которых — `input`, `textarea` или `[contenteditable=true]`. В текущем виде Cmd+K, нажатый во время ввода в поиске хедера, будет проигнорирован, что ломает R1 из PRD.
+- Модальные окна: `src/components/ui/Dialog.tsx` оборачивает `@radix-ui/react-dialog` (focus trap, Esc, блокировка скролла) и всегда рендерит видимый заголовок. `src/components/layout/ShortcutsHelp.tsx` показывает шорткаты из константы `SHORTCUTS` и открывается по `?`.
+- Аналитика: в `src/analytics/track.ts` типизированный union `EventName`; новые имена событий добавляются туда.
+- Механизма фича-флагов в приложении нет, и ничто не хранит пользовательское состояние UI (нет использования `localStorage`). В `src/` нет файла стилей; компоненты используют имена классов вроде `dialog-overlay`.
+- Тесты: `vitest` и `@testing-library/react` установлены (`npm test`), но файлов тестов в репозитории пока нет.
 
 ## Предлагаемое решение
 
@@ -37,126 +37,125 @@ links: [ADMIN-231]
 
 ```mermaid
 sequenceDiagram
-  actor Agent
-  participant Hotkey as useHotkey
-  participant Palette as CommandPalette
-  participant Search as GET /api/search
+  participant Agent
+  participant useHotkey
+  participant CommandPalette
+  participant usePermissions
+  participant API as GET /api/search
   participant Router
-  Agent->>Hotkey: Cmd/Ctrl+K
-  Hotkey->>Palette: открыть
-  Palette->>Palette: пустое поле: читает recentItems
-  Agent->>Palette: вводит запрос
-  Palette->>Palette: фильтрует разделы по названию и правам
-  Palette->>Search: q (от 2 символов, debounce 150 мс)
-  Search-->>Palette: заказы, клиенты
-  Palette->>Palette: отбрасывает результаты без orders:view / customers:view
-  Agent->>Palette: Enter или клик
-  Palette->>Router: navigate(path)
+  Agent->>useHotkey: Cmd+K / Ctrl+K (в том числе внутри полей ввода)
+  useHotkey->>CommandPalette: open()
+  CommandPalette->>usePermissions: has(permission) для каждого роута
+  CommandPalette-->>Agent: "Recent" + "Sections"
+  Agent->>CommandPalette: вводит "smi"
+  CommandPalette->>API: ?q=smi&limit=10 (после дебаунса 200 мс)
+  API-->>CommandPalette: { orders, customers }
+  CommandPalette-->>Agent: "Sections" + "Orders" + "Customers"
+  Agent->>CommandPalette: Down, Enter
+  CommandPalette->>CommandPalette: track(), recordRecent()
+  CommandPalette->>Router: navigate(path), закрытие
 ```
 
 ### Компоненты и изменения
 
-- `src/hooks/useHotkey.ts` — добавляем опцию `allowInInputs` (по умолчанию `false`). Сочетание палитры использует `{ meta: true, allowInInputs: true }`, поэтому Cmd/Ctrl+K работает и когда курсор в текстовом поле; `?` ведёт себя как сейчас.
-- `src/components/layout/Header.tsx` — регистрирует хоткей Cmd/Ctrl+K, хранит состояние `open` палитры, рендерит `CommandPalette`, отправляет `command_palette_opened`. Форма поиска в хедере остаётся как есть.
-- `src/components/command-palette/CommandPalette.tsx` — новый. Рендерится внутри `Dialog`: текстовое поле и один список с группами Недавние / Разделы / Заказы / Клиенты. ↑/↓ переключают активный пункт, Enter или клик выбирают, Esc закрывает (Radix). Реализует ARIA-паттерн combobox + listbox (`role="combobox"`, `aria-activedescendant`). При выборе: `navigate(path)`, закрытие, событие аналитики. Тексты интерфейса (заголовок окна, плейсхолдер, названия групп, пустое состояние и состояние ошибки) придут вместе с дизайном (PRD Q12); до тех пор палитра использует временные тексты на английском, скрытые за флагом сборки.
-- `src/components/command-palette/useSectionCommands.ts` — новый. `routes.filter(r => r.inNav && has(r.permission))` — то же правило, что в `Sidebar`; сопоставление с `title` по подстроке без учёта регистра. Ничего не возвращает, пока `loaded` не равно `true`.
-- `src/components/command-palette/useEntitySearch.ts` — новый. TanStack Query с ключом `["palette-search", q]` вызывает `searchEntities(q, 5, signal)`, включается при `q.trim().length >= 2`, ввод с debounce 150 мс; `signal` запроса отменяет устаревшие запросы. Отбрасывает заказы без `has("orders:view")` и клиентов без `has("customers:view")` (допущение, см. Q4 в PRD).
-- `src/components/command-palette/recentItems.ts` — новый. Функции чтения/записи поверх `localStorage` и хук `useRecordRecent(type, id)`.
-- `src/pages/OrderDetailsPage.tsx`, `src/pages/CustomerDetailsPage.tsx` — при монтировании вызывают `useRecordRecent("order", orderId)` / `useRecordRecent("customer", customerId)`, так что «открытым» считается любой заход на страницу заказа или клиента (допущение, см. Q5 в PRD).
-- `src/auth/usePermissions.ts` — дополнительно возвращает `userId` (из уже загруженного `/api/me`), чтобы разделять недавние по пользователям.
-- `src/components/layout/ShortcutsHelp.tsx` — добавляем пункт для Cmd/Ctrl+K в `SHORTCUTS`; текст придёт вместе с дизайном (PRD Q12).
-- `src/analytics/track.ts` — добавляем `command_palette_opened` и `command_palette_item_selected` в `EventName`.
+- `src/flags.ts` — новый: `isEnabled("command_palette")` возвращает `import.meta.env.VITE_FF_COMMAND_PALETTE === "true"`. Build-time, на каждое окружение (см. *Альтернативы и решения* и Q2).
+- `src/hooks/useHotkey.ts` — изменение: новая опция `inInputs?: boolean`; при `true` проверка на `input` / `textarea` / `contenteditable` пропускается. По умолчанию остаётся `false`, так что `?` ведёт себя как раньше.
+- `src/components/palette/matchSections.ts` — новый: `matchSections(routes, has, query)` возвращает роуты с `inNav && has(permission)`, чей `title` содержит `query` без учёта регистра; пустой запрос возвращает все.
+- `src/components/palette/useRecentItems.ts` — новый: читает и пишет ключ `localStorage` `acme-admin.recent.<userId>`. `record({ type, id, label? })` делает upsert по `type + id`, переносит элемент в начало, сохраняет существующий непустой label, если новый не передан, и ограничивает список 10 элементами. `items` фильтруется по `has("orders:view")` / `has("customers:view")`. Всё бездействует, пока не `usePermissions().loaded`. Также экспортирует `useRecordVisits()`, который следит за `useLocation()` и записывает посещения `/orders/:orderId` и `/customers/:customerId` с id в качестве label.
+- `src/components/palette/CommandPalette.tsx` — новый. Построен напрямую на `@radix-ui/react-dialog`, с визуально скрытым `Title` "Command palette", полем ввода и listbox. Владеет своим состоянием открытия и регистрирует `useHotkey("k", open, { meta: true, inInputs: true })`; вызывает `useRecordVisits()`. Группы по порядку: "Recent" (только при пустом запросе), "Sections", "Orders", "Customers". Запрос дебаунсится 200 мс; `useQuery(["palette-search", q])` вызывает `searchEntities(q, 10, signal)`, включён, когда `q.trim().length >= 2` и у агента есть `orders:view` или `customers:view`, с `placeholderData: keepPreviousData`. Заказы показываются только при `orders:view`, клиенты — только при `customers:view`. Клавиатура: ArrowUp / ArrowDown двигают один активный индекс по всем группам, Enter открывает активный элемент, Esc закрывает (Radix). Открытие элемента: `track("command_palette_item_opened", …)`, `record()` для заказов и клиентов, `navigate(path)`, закрытие.
+- `src/components/layout/AppLayout.tsx` — изменение: рендерить `<CommandPalette />`, когда `isEnabled("command_palette")`.
+- `src/pages/SearchPage.tsx` — изменение: при клике по результату также вызывать `record()` с label результата, чтобы элементы, открытые со страницы результатов, имели имя.
+- `src/components/layout/ShortcutsHelp.tsx` — изменение: при включённом флаге `SHORTCUTS` содержит также `{ keys: "Cmd+K / Ctrl+K", description: "Open command palette" }`.
+- `src/analytics/track.ts` — изменение: добавить `command_palette_opened` и `command_palette_item_opened` в `EventName`.
+- Стили: имена классов `palette-overlay`, `palette-content`, `palette-input`, `palette-group`, `palette-item`, `palette-item--active` по существующей конвенции `dialog-*`; финальная стилизация придёт вместе с дизайном (PRD Q4).
 
 ### Модель данных
 
-Недавние пункты хранятся в `localStorage` под ключом `acme-admin:recent:<userId>`:
+Изменений в базе данных нет. Одна запись `localStorage` на агента, ключ `acme-admin.recent.<userId>`, значение — JSON-массив не больше 10 элементов:
 
 ```ts
 interface RecentItem {
   type: "order" | "customer";
-  id: string;       // "ORD-10482", "CUS-2210"
-  openedAt: number; // epoch ms
+  id: string;        // "ORD-10482" / "CUS-2210"
+  label: string;     // order id, or customer name; never the email
+  openedAt: number;  // Date.now()
 }
-// value: JSON array of RecentItem, newest first, deduplicated by type + id, at most 5
 ```
-
-Хранятся только тип и id, без имён и email клиентов (допущение, см. Q6 в PRD). Палитра показывает сохранённый id. Лимит в 5 пунктов — допущение (см. Q5 в PRD).
 
 ### API / интерфейсы
 
-- Новых эндпоинтов нет. Палитра использует существующий `GET /api/search` через `searchEntities(q, limit, signal)` с `limit = 5` (допущение, см. Q7 в PRD).
-- Пропсы `CommandPalette`: `{ open: boolean; onOpenChange: (open: boolean) => void }`.
-- `useHotkey(key, handler, opts)` — в `opts` появляется `allowInInputs?: boolean`.
-- `usePermissions()` возвращает `{ has, loaded, userId }`.
-- События аналитики:
-  - `command_palette_opened` — `{ trigger: "hotkey" }`.
-  - `command_palette_item_selected` — `{ kind: "section" | "order" | "customer", from_recent: boolean, query_length: number, ms_since_open: number }`.
-  - `search_result_opened` — отправляется и для заказов и клиентов, открытых из палитры, с `{ type, source: "command_palette" }`, чтобы метрика доли из PRD разбивалась по `source`.
+Новых или изменённых эндпоинтов нет. Палитра вызывает существующий `GET /api/search?q=<query>&limit=10`.
+
+Новые события аналитики:
+
+- `command_palette_opened` — `{ trigger: "hotkey" }`.
+- `command_palette_item_opened` — `{ kind: "section" | "order" | "customer" | "recent", position: number, query_length: number, duration_ms: number }`, где `duration_ms` — время от открытия палитры до выбора элемента.
 
 ## Покрытие требований
 
 | ID в PRD | Как выполняется | Раздел |
 |----------|-----------------|--------|
-| R1 | Cmd/Ctrl+K через `useHotkey` с `meta` + `allowInInputs`, зарегистрирован в `Header` (его на каждой странице рендерит `AppLayout`); Esc обрабатывает `Dialog` | Компоненты и изменения |
-| R2 | `useSectionCommands` сопоставляет названия из `routes`; Enter/клик вызывает `navigate(path)` | Компоненты и изменения |
-| R3 | Тот же фильтр, что в `Sidebar`: `inNav && has(permission)`, до `loaded` ничего не показывается | Компоненты и изменения |
-| R4 | `useEntitySearch` поверх `GET /api/search`; выбор сразу ведёт на `/orders/:orderId` или `/customers/:customerId` | Компоненты и изменения, API / интерфейсы |
-| R5 | **Partial:** недавние хранятся в `localStorage` конкретного браузера, поэтому не переходят с агентом на другой компьютер или в другой браузер, и показываются только id, без имён клиентов (см. Q6 в PRD) | Модель данных |
+| R1 | `useHotkey("k", open, { meta: true, inInputs: true })`; Radix закрывает по Esc и по клику на оверлей | Компоненты и изменения |
+| R2 | `matchSections()` по `routes`; Enter или клик вызывает `navigate(route.path)` | Компоненты и изменения |
+| R3 | Дебаунснутый `searchEntities(q, 10)` начиная с 2 символов; результаты сгруппированы в "Orders" / "Customers"; Enter или клик переходит на `/orders/:id` или `/customers/:id` | Компоненты и изменения |
+| R4 | Разделы берутся только из `matchSections()`, который применяет `has(permission)`; пока не `loaded`, ничего не показывается. Допущение (PRD Q5): результаты по заказам и клиентам скрываются так же, через `has("orders:view")` / `has("customers:view")` | Компоненты и изменения |
+| R5 | `useRecentItems` показывается как "Recent" при пустом запросе, самые свежие первыми. Допущение (PRD Q7): не больше 10 элементов, хранятся на уровне браузера в `localStorage`, без синхронизации между устройствами | Компоненты и изменения, Модель данных |
+| R6 | Один активный индекс по всем группам; ArrowUp / ArrowDown двигают его, Enter открывает | Компоненты и изменения |
+| R7 | Запись в `SHORTCUTS` "Cmd+K / Ctrl+K" — "Open command palette" при включённом флаге | Компоненты и изменения |
+
+Допущение (PRD Q7): поисковый запрос использует `limit=10`, и все вернувшиеся результаты показываются; палитра дополнительно группы не ограничивает.
+Допущение (PRD Q6): поиск в хедере и страница `/search` остаются без изменений.
 
 ## Альтернативы и решения
 
 | Решение | Рассмотренные варианты | Выбрано | Почему |
 |---------|------------------------|---------|--------|
-| UI палитры | Подключить библиотеку `cmdk`; строить на существующем `Dialog` | Существующий `Dialog` + свой список | Без новой зависимости; focus trap и Esc уже даёт Radix. Цена: ARIA-паттерн combobox реализуем сами |
-| Сопоставление разделов | Библиотека нечёткого поиска; подстрока без учёта регистра | Подстрока | Разделов шесть; нечёткий поиск добавит зависимость при небольшой пользе. Легко заменить позже |
-| Где хранить недавние | Новый эндпоинт на бэкенде; `sessionStorage`; `localStorage` по пользователю | `localStorage` по пользователю | Без работы на бэкенде и переживает перезагрузку; ключ по `userId` разделяет агентов на общем компьютере. Цена: нет синхронизации между устройствами (R5 частично) |
-| Что считается «открытым» | Только выбор в палитре; любой заход на страницу заказа или клиента | Любой заход на страницу | Соответствует «последним открытым» из тикета, включая открытия со страницы поиска и по ссылкам. Допущение, см. Q5 в PRD |
-| Хоткей в текстовых полях | Отдельный обработчик keydown; расширить `useHotkey` | Расширить `useHotkey` опцией `allowInInputs` | Все глобальные сочетания в одном месте; сочетания с модификатором не мешают вводу текста |
-| Права на записи | Показывать все результаты; скрывать по `orders:view` / `customers:view` | Скрывать | Самый консервативный вариант, пока нет ответа на Q4 в PRD |
-| Частота запросов | Запрос на каждое нажатие; debounce + отмена | Debounce 150 мс + отмена через `signal` | Поиск по мере ввода шлёт гораздо больше запросов, чем нынешние ≈ 4 000 отправок в день |
+| Хоткей внутри текстовых полей | A: опция `inInputs` у `useHotkey`; B: отдельный слушатель `keydown` в `CommandPalette`; C: сделать так, чтобы `useHotkey` всегда пропускал meta-комбинации | A | Один путь для хоткеев во всём приложении; `?` сохраняет текущее поведение |
+| База для диалога | A: переиспользовать `Dialog` (видимый заголовок); B: `@radix-ui/react-dialog` напрямую со скрытым заголовком; C: добавить проп `hideTitle` в `Dialog` | B | Раскладка палитры (поле ввода как шапка, список как тело) не ложится на общий модал; `Dialog` не трогаем; focus trap и Esc по-прежнему от Radix |
+| Источник разделов | A: `routes` с `inNav && has(permission)`; B: отдельный захардкоженный список | A | Тот же список, что в сайдбаре, поэтому они не разойдутся, и R4 выполняется по построению |
+| Поиск сущностей | A: существующий `GET /api/search` с `limit=10`; B: новый эндпоинт для палитры; C: индекс на клиенте | A | Без работы на бэкенде; его минимальная длина и поля поиска уже совпадают с тикетом |
+| Хранение недавних | A: `localStorage` с ключом по user id; B: хранение на бэкенде; C: только в памяти | A | Без работы на бэкенде, переживает перезагрузку; только на уровне браузера (PRD Q7) |
+| Фича-флаг | A: build-time `VITE_FF_COMMAND_PALETTE`; B: runtime-флаг из `/api/me` | A | Сегодня ничего нет, а B требует работы на бэкенде; откат — это редеплой (Q2) |
+| Видимость результатов по правам | A: фильтровать на клиенте через `has()`; B: положиться на бэкенд | A | Консервативно (PRD Q5); фильтрует ли бэкенд, неизвестно (Q1) |
 
 ## Граничные случаи и обработка ошибок
 
-- Запрос короче 2 символов → только разделы (или недавние, если поле пустое); запроса к API нет.
-- `GET /api/search` вернул ошибку или не ответил вовремя → разделы по-прежнему показываются; группа заказов/клиентов показывает состояние ошибки (текст по дизайну, PRD Q12); палитрой можно пользоваться дальше.
-- Ответы приходят не по порядку → TanStack Query отменяет устаревший запрос через `signal`; показываются только результаты для текущего запроса.
-- Права ещё не загружены (`loaded === false`) → ни разделов, ни записей; они появляются, когда ответит `/api/me`.
-- Ничего не найдено → пустое состояние (текст по дизайну, PRD Q12).
-- Недавний пункт, к которому у агента больше нет доступа (права отозваны) → скрывается при рендере палитры.
-- `localStorage` недоступен, переполнен или содержит невалидный JSON → недавние пропускаются, сохранённое значение сбрасывается; остальная палитра работает.
-- Cmd/Ctrl+K, когда палитра уже открыта → фокус возвращается в поле ввода; второе окно не открывается.
-- Cmd/Ctrl+K, когда открыт другой диалог (например, `ShortcutsHelp`) → игнорируется.
-- Ctrl+K на Windows — ещё и сочетание браузера (фокус на поиск браузера) → `useHotkey` вызывает `preventDefault()`, когда фокус на странице.
-- Enter во время IME-ввода (`e.isComposing`) → игнорируется, чтобы не выбрать пункт.
+- Права ещё не загружены (`loaded === false`) → палитра открывается только с полем ввода; ни разделов, ни результатов, ни недавних, пока не загрузятся.
+- Запрос короче 2 символов → только разделы, без запроса к API.
+- Запрос от 2 символов, но у агента нет ни `orders:view`, ни `customers:view` → без запроса к API, только разделы.
+- Запрос в полёте → предыдущие результаты остаются видны с подсказкой "Searching…"; новый ввод прерывает предыдущий запрос через `signal` запроса.
+- `GET /api/search` упал → под разделами показывается "Search is unavailable"; разделы продолжают работать; следующее нажатие клавиши повторяет запрос.
+- Ни раздел, ни заказ, ни клиент не найдены → "No results for “<query>”".
+- Cmd+K при открытой палитре → остаётся открытой, текст в поле ввода выделяется.
+- Ctrl+K на macOS тоже открывает палитру (`useHotkey` не различает `metaKey` и `ctrlKey`). Собственный Cmd+K / Ctrl+K браузера подавляется через `preventDefault()` только пока фокус на странице.
+- Enter без активного элемента → ничего не происходит.
+- Недавний элемент, сущность которого больше не существует → переход на страницу деталей, которая показывает своё состояние «не найдено»; элемент остаётся в списке.
+- Недавний элемент, на который агент потерял права → отфильтровывается при рендере через `has()`.
+- Повреждённое или не-JSON значение в `localStorage` → считается пустым списком и перезаписывается при следующем `record()`.
+- Другой агент входит в том же браузере → другой ключ; списки хранятся по user id.
 
 ## Нефункциональные требования
 
-- Доступность: роли combobox + listbox, активный пункт озвучивается через `aria-activedescendant`, focus trap и возврат фокуса при закрытии — от Radix.
-- Производительность: разделы фильтруются в памяти; поиск по записям добавляет примерно один запрос на каждую паузу в наборе от 150 мс, p95 ≈ 350 мс на текущем эндпоинте.
-- Приватность: в `localStorage` лежат только типы и id записей, с разделением по `userId`.
+- Производительность: дебаунс 200 мс плюс p95 эндпоинта ≈ 350 мс, так что результаты обычно появляются примерно через 550 мс после последнего нажатия; `limit=10` держит список коротким.
+- Доступность: focus trap и Esc от Radix; поле ввода с `role="combobox"` и `aria-expanded`, список с `role="listbox"`, активный элемент через `aria-activedescendant`; скрытый заголовок "Command palette" для скринридеров.
+- Приватность: в недавних хранятся только id и имена, никогда email, под ключом конкретного пользователя.
 
 ## План тестирования
 
-- Подготовка: в репозитории пока нет ни тестов, ни конфига Vitest. Добавить `vitest.config.ts` с окружением `jsdom` и `jsdom` в dev-зависимости, чтобы компонентные тесты могли рендерить.
-- Unit (Vitest): сопоставление и фильтрация по правам в `useSectionCommands` (R2, R3); порядок, дедупликация, лимит в 5, ключи по пользователю и невалидный JSON в `recentItems` (R5); `useHotkey` с `allowInInputs`.
-- Компонентные (Testing Library, `searchEntities` замокан): Cmd+K и Ctrl+K открывают палитру, в том числе из поля ввода в фокусе, Esc закрывает её (R1); стрелки + Enter и клик ведут на страницы раздела, заказа и клиента (R2, R4); результаты отбрасываются без `orders:view` / `customers:view`; при пустом поле показываются недавние (R5); состояния ошибки и пустого результата.
-- Ручные: macOS и Windows в браузерах, которыми пользуется поддержка; проверить, что собственное Ctrl+K / Cmd+K браузера не срабатывает.
+- Unit (`vitest`): `useHotkey` с `inInputs: true` срабатывает при фокусе в поле ввода и по-прежнему игнорируется без неё; `matchSections` фильтрует по правам, `inNav` и запросу; `useRecentItems` делает upsert в начало, сохраняет label, ограничивает 10 элементами, разделяет по пользователям, переживает повреждённые данные.
+- Компонентные (`@testing-library/react`, `searchEntities` замокан): Cmd+K и Ctrl+K открывают палитру, в том числе из поля в хедере, Esc закрывает (R1); «ref» показывает «Refunds», Enter переходит на `/refunds` (R2); результаты сгруппированы, Enter открывает `/orders/<id>` (R3); агент без `refunds:manage` никогда не видит «Refunds» (R4); пустой запрос показывает недавние, самые свежие первыми (R5); Down дважды и Enter открывает третий элемент (R6); состояния "Searching…", "Search is unavailable" и "No results for “<query>”".
+- Ручные на стейджинге: два аккаунта с разными правами, macOS и Windows, с курсором в поиске хедера (R1, R4); диалог «Keyboard shortcuts» показывает запись (R7).
 
 ## Раскатка и откат
 
-Механизма фича-флагов в приложении нет, поэтому палитра закрыта переменной Vite на этапе сборки `VITE_FEATURE_COMMAND_PALETTE`: когда она выключена, хоткей не регистрируется и ничего не рендерится. Шаги: включить на стейджинге → включить в проде для всех. Поиск в хедере и страница результатов поиска не меняются, так что у агентов остаётся старый путь (допущение, см. Q9 в PRD). Откат: пересобрать и задеплоить с выключенной переменной. Сохранённые недавние пункты при выключенной фиче ни на что не влияют.
+Флаг `VITE_FF_COMMAND_PALETTE`, по умолчанию выключен. Раскатка: включить на стейджинге → включить в продакшене после прохождения проверки на стейджинге; build-time флаг не может нацелиться на часть агентов (Q2). Поиск в хедере остаётся запасным вариантом. Откат: редеплой с выключенным флагом; больше откатывать нечего — ни миграций, ни изменений бэкенда, а недавние в `localStorage` без палитры бездействуют.
 
 ## Наблюдаемость
 
-- `command_palette_opened` и `command_palette_item_selected` (с `ms_since_open`) дают время от открытия палитры до открытия записи для метрики времени из PRD.
-- `search_result_opened` в разбивке по `source` (`search_page` и `command_palette`) даёт метрику доли из PRD; `header_search_submitted` в день остаётся третьей метрикой.
-- Базовое значение для метрики времени: интервал между `header_search_submitted` и следующим за ним `search_result_opened` в той же сессии. Он не включает время набора текста, поэтому занижает текущее время.
+`command_palette_opened` и `command_palette_item_opened` (с `duration_ms`) питают метрики из PRD. Новых алертов нет.
 
 ## Открытые вопросы
 
-- [ ] **Q1.** Проверяет ли `GET /api/search` права `orders:view` / `customers:view` на сервере или отдаёт результаты всем? — команда бэкенда
-- [ ] **Q2.** `limit` в `GET /api/search` применяется к каждому типу отдельно или к заказам и клиентам вместе? — команда бэкенда
-- [ ] **Q3.** Выдержит ли `GET /api/search` дополнительную нагрузку от поиска по мере ввода у всех агентов? — команда бэкенда
-- [ ] **Q4.** Есть ли рантайм-сервис фича-флагов, который стоит использовать вместо переменной сборки? — команда фронтенда
-- [ ] **Q5.** Умеет ли коллектор аналитики считать интервал между двумя событиями в одной сессии — это нужно для метрики времени и её базового значения? — команда аналитики
-- [ ] **Q6.** Какой инженер владеет этой спецификацией? — тимлид фронтенда
+- [ ] **Q1.** Фильтрует ли `GET /api/search` результаты по правам вызывающего? Если нет, фильтрация на клиенте лишь прячет их в палитре, а страница `/search` продолжает их показывать, как сегодня. — команда бэкенда
+- [ ] **Q2.** Есть ли runtime-механизм фича-флагов (например, поле `features` в `/api/me`), который стоит использовать вместо build-time `VITE_FF_COMMAND_PALETTE`? Build-time означает, что откат — это редеплой, а частичная раскатка невозможна. — фронтенд-лид, команда бэкенда
+- [ ] **Q3.** Нужно ли регистрировать новые имена событий в коллекторе аналитики, прежде чем они начнут считаться? — аналитика

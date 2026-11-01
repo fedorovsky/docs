@@ -17,82 +17,85 @@ links: [ADMIN-231]
 
 ## Summary
 
-Support agents get a keyboard-first command palette in the admin: press Cmd+K (Ctrl+K on Windows), start typing and jump straight to an admin section, an order or a customer. This removes the extra search results page step that agents go through thousands of times a day.
+Support agents get a command palette: Cmd+K (Ctrl+K on Windows) on any page opens a dialog where typing shows admin sections, orders and customers, and Enter opens the chosen one. It replaces the header search → results page → click round trip for the lookups agents do all day, and brings back recently opened orders and customers without typing.
 
 ## Problem
 
-Support agents switch between orders and customers all day. To open an order today, an agent clicks the header search, types the number, waits for the search results page and clicks again. Analytics show `header_search_submitted` about 4,000 times a day, almost always followed straight away by `search_result_opened`. The results page is an extra step on almost every lookup. Agents also often come back to the same orders and customers while working a ticket, and today they have to search for them again each time.
-
-We don't know how long opening an order takes today: there is no baseline.
+Support agents switch between orders and customers all day. Opening an order today takes four steps: click the header search, type the number, wait for the results page, click the result. Analytics show `header_search_submitted` about 4,000 times a day, almost always followed immediately by `search_result_opened`, so the results page is a wasted step on nearly every lookup. If we do nothing, agents keep paying that step about 4,000 times a day. We have no measurement of how long a lookup takes today (see Q2).
 
 ## Goals
 
-- Agents open the order, customer or admin section they need in less time than today.
-- Agents get back to orders and customers they recently opened without searching again.
+- Agents reach the order, customer or section they need in fewer steps, from any page, without leaving the keyboard.
+- Returning to a recently opened order or customer takes no typing.
 
 ## Non-goals
 
-- Running actions from the palette (e.g. "issue a refund for order…"). Wanted some day, explicitly not now.
+- Actions from the palette ("Refund order …"): explicitly later.
+- Removing or redesigning the header search and the `/search` results page (see Q6).
+- Searching anything other than orders, customers and admin sections (no merchants, refunds, settings).
+- Touch or mobile layouts: the admin is used on desktop.
+- Changing who has access to what: the palette only reflects existing permissions.
 
 ## Users & scenarios
 
-Users: support agents working in the admin.
+Support agents are the primary users; operations team members use the same admin and get the same palette.
 
-- As a support agent, I want to open an order by typing its number into the palette so that I skip the search results page.
-- As a support agent, I want to find a customer by name or email from any page so that I can switch context without leaving the keyboard.
-- As a support agent, I want to jump to an admin section (e.g. "Refunds", "Merchants") by typing its name.
-- As a support agent, I want to see my recently opened orders and customers when I open the palette so that I can get back to the ticket I'm working on.
+- As a support agent, I want to press Cmd+K and type an order number so that the order opens without a results page.
+- As a support agent, I want to type part of a customer's name or email so that the customer opens directly.
+- As a support agent, I want to type a section name ("Refunds", "Merchants") so that I jump there without the sidebar.
+- As a support agent, I want to see the orders and customers I opened recently when the palette is empty, so that I can return to the ticket I'm working on.
+- As an admin, I want agents to see only the sections they have access to, so that the palette doesn't advertise restricted areas.
 
 ```mermaid
 flowchart TD
-  A[Agent presses Cmd+K / Ctrl+K] --> B[Palette opens, cursor in the input]
-  B --> C{Input empty?}
-  C -- yes --> D[Recently opened orders and customers]
-  C -- no --> E[Matching sections, orders and customers]
-  D --> F[Agent picks an item: Enter or click]
-  E --> F
-  F --> G[Section, order or customer page opens]
-  B -- Esc --> H[Palette closes, agent stays on the page]
+  A[Agent presses Cmd+K / Ctrl+K on any page] --> B[Palette opens with an empty input]
+  B --> C{Query}
+  C -- empty --> D[Recent orders and customers + sections]
+  C -- under 2 characters --> E[Matching sections]
+  C -- 2 characters or more --> F[Matching sections + orders + customers]
+  D --> G[Up / Down to choose, Enter or click]
+  E --> G
+  F --> G
+  G --> H[Section, order or customer page opens and the palette closes]
+  B -- Esc or click outside --> I[Palette closes]
 ```
 
 ## Requirements
 
 | ID | Requirement | Priority | Acceptance criteria |
 |----|-------------|----------|---------------------|
-| R1 | Agent opens the palette from any admin page with Cmd+K on macOS or Ctrl+K on Windows, and closes it with Esc | Must | On every admin page the shortcut opens the palette with the cursor in its input; Esc closes it and the agent stays on the same page |
-| R2 | As the agent types, the palette shows admin sections whose name matches, and opens the selected section | Must | Typing "ref" shows "Refunds"; choosing it with the arrow keys + Enter, or with a click, opens the Refunds page |
-| R3 | The palette never shows sections the agent has no access to | Must | An agent without access to Refunds types "ref" and sees no "Refunds" item; an agent with access sees it |
-| R4 | As the agent types, the palette shows orders found by order number and customers found by customer number, name or email, and opens the selected one directly | Must | Typing an existing order number shows that order; choosing it opens the order page without going through the search results page. Same for a customer found by number, name and email |
-| R5 | With an empty input, the palette shows the orders and customers the agent opened most recently | Could | After opening order A and then customer B, opening the palette shows B and A, most recent first; choosing one opens its page |
+| R1 | Cmd+K (macOS) / Ctrl+K (Windows, Linux) opens the palette on any page, including while the cursor is in a text field; Esc closes it | Must | On every page, with and without focus in the header search, the shortcut opens the palette; Esc or a click outside closes it |
+| R2 | Typing shows admin sections whose name contains the text; Enter or click navigates there | Must | Typing "ref" shows "Refunds"; Enter opens `/refunds` |
+| R3 | From 2 characters, the palette shows orders and customers matching by order number, customer name or email; Enter or click opens the details page | Must | Typing an order number shows that order and Enter opens `/orders/<id>`; typing part of an email shows the customer and Enter opens `/customers/<id>` |
+| R4 | The agent never sees sections they have no permission for | Must | An agent without `refunds:manage` cannot make "Refunds" appear in the palette with any query |
+| R5 | With an empty query, the palette shows the agent's recently opened orders and customers, most recent first | Should | Open two orders, press Cmd+K: both are listed, the latest first; selecting one opens it |
+| R6 | Results can be walked with the keyboard: Up / Down moves the selection, Enter opens the selected item | Must | With three results, Down twice then Enter opens the third |
+| R7 | The shortcut is listed in the keyboard shortcuts help ("?") | Could | The "Keyboard shortcuts" dialog lists "Cmd+K / Ctrl+K" with "Open command palette" |
 
 ## Success metrics
 
 | Metric | Baseline | Target | How measured |
 |--------|----------|--------|--------------|
-| Time for an agent to open the order or customer they need | unknown — see Q2 | unknown — see Q2 | Analytics events; how exactly the time is measured is defined in the Spec |
-| Share of order and customer opens that go through the palette | 0 | unknown — see Q3 | `search_result_opened` split by source |
-| Header search submissions per day | ≈ 4,000 | unknown — see Q3 | `header_search_submitted` |
+| Time from opening the palette to opening an item | unknown — see Q2 | unknown — see Q2 | New event `command_palette_item_opened`, `duration_ms` property |
+| Share of lookups done through the palette rather than the header search | 0% | unknown — see Q2 | `command_palette_item_opened` vs `header_search_submitted` per day |
+| Header searches per day | ≈ 4,000 | unknown — see Q2 | `header_search_submitted` count |
 
 ## Risks & dependencies
 
-- No mockups yet; the designer joins later. Final look, wording and empty/error states depend on the design (Q12).
-- R3 and R4 depend on the existing permission model and the existing search over orders and customers.
+- No mockups yet; the designer joins later (Q4). The palette ships with a provisional layout and texts behind a feature flag and gets the final design in a late task.
+- Search speed depends on the existing `/api/search` endpoint (p95 ≈ 350 ms); the palette can't be faster than it.
+- Permissions come from `/api/me`; until they are loaded the palette must show nothing that needs a permission.
 
 ## Timeline
 
-- Wanted next quarter (per ADMIN-231); the exact date will be given later.
+- Wanted next quarter; the exact date is to be confirmed (Q3).
 
 ## Open questions
 
-- [ ] **Q1.** Who owns this feature and who should review the PRD and Spec? — product (ADMIN-231 author)
-- [ ] **Q2.** What baseline and target for the time to open an order or customer? Is a baseline from existing analytics acceptable, or do we need a separate measurement before launch? — product (ADMIN-231 author)
-- [ ] **Q3.** What targets for palette adoption and for the drop in header search submissions? — product (ADMIN-231 author)
-- [ ] **Q4.** Should an agent without access to orders or customers see orders or customers in the palette results? The ticket only covers sections. — product (ADMIN-231 author)
-- [ ] **Q5.** Recent items: how many to show, and does "opened" mean any visit to an order or customer page or only opens from the palette? — product (ADMIN-231 author)
-- [ ] **Q6.** Recent items: is it acceptable that they are kept per computer and browser, not synced between them? May the palette remember customer names on the agent's computer, or should it show only order and customer numbers? — product (ADMIN-231 author), security
-- [ ] **Q7.** How many orders and customers should the palette show for one query? — designer (TBD)
-- [ ] **Q8.** Should typing a customer's name or email also list that customer's orders, or only the customer? — product (ADMIN-231 author)
-- [ ] **Q9.** Do the header search and the search results page stay unchanged after launch? — product (ADMIN-231 author)
-- [ ] **Q10.** Is the priority of recent items (R5, Could) right? — product (ADMIN-231 author)
-- [ ] **Q11.** Which date exactly does "next quarter" mean? — product (ADMIN-231 author)
-- [ ] **Q12.** Mockups and UI texts for the palette: dialog title, input placeholder, group names, empty and error states, and the shortcuts help entry. — designer (TBD)
+- [ ] **Q1.** Who owns this PRD and who reviews it? — product (ticket author)
+- [ ] **Q2.** What is the current time from starting a search to opening a result, and what target do we set for the palette and for the share of lookups going through it? Can the baseline be derived from the gap between `header_search_submitted` and `search_result_opened` in existing analytics? — product, analytics
+- [ ] **Q3.** What is the exact deadline within next quarter? — product
+- [ ] **Q4.** When do the mockups arrive, and which layout and texts are final? — design
+- [ ] **Q5.** Does "no access" apply to order and customer results as well as sections, i.e. should an agent without `orders:view` see orders in the palette? Today the `/search` page shows them to anyone with `dashboard:view`. — product
+- [ ] **Q6.** Does the header search box stay as it is once the palette ships, or does it become a button that opens the palette? — product
+- [ ] **Q7.** How many recent items and how many results per group should the palette show, and is a "recent" list kept per browser (not synced across the agent's devices) acceptable? — product
