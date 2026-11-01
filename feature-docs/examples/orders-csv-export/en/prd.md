@@ -2,6 +2,8 @@
 type: prd
 title: Orders CSV export
 feature: orders-csv-export
+lang: en
+mirror: ../ru/prd.md
 status: approved
 owner: Jane Doe
 reviewers: [Alex Kim, Sam Lee]

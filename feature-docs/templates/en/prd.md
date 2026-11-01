@@ -2,6 +2,8 @@
 type: prd
 title: <Feature name>
 feature: <feature-slug>
+lang: en
+mirror: ../ru/prd.md
 status: draft            # draft | review | approved | shipped | deprecated
 owner: <name>
 reviewers: []

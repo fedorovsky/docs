@@ -2,6 +2,8 @@
 type: spec
 title: Orders CSV export
 feature: orders-csv-export
+lang: en
+mirror: ../ru/spec.md
 status: review
 owner: Alex Kim
 reviewers: [Sam Lee]
