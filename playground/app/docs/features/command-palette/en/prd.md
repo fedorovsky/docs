@@ -69,13 +69,13 @@ flowchart TD
 
 | Metric | Baseline | Target | How measured |
 |--------|----------|--------|--------------|
-| Time for an agent to open the order or customer they need | unknown — see OQ | unknown — see OQ | Analytics events; how exactly the time is measured is defined in the Spec |
-| Share of order and customer opens that go through the palette | 0 | unknown — see OQ | `search_result_opened` split by source |
-| Header search submissions per day | ≈ 4,000 | unknown — see OQ | `header_search_submitted` |
+| Time for an agent to open the order or customer they need | unknown — see Q2 | unknown — see Q2 | Analytics events; how exactly the time is measured is defined in the Spec |
+| Share of order and customer opens that go through the palette | 0 | unknown — see Q3 | `search_result_opened` split by source |
+| Header search submissions per day | ≈ 4,000 | unknown — see Q3 | `header_search_submitted` |
 
 ## Risks & dependencies
 
-- No mockups yet; the designer joins later. Final look, wording and empty/error states depend on the design.
+- No mockups yet; the designer joins later. Final look, wording and empty/error states depend on the design (Q12).
 - R3 and R4 depend on the existing permission model and the existing search over orders and customers.
 
 ## Timeline
@@ -95,3 +95,4 @@ flowchart TD
 - [ ] **Q9.** Do the header search and the search results page stay unchanged after launch? — product (ADMIN-231 author)
 - [ ] **Q10.** Is the priority of recent items (R5, Could) right? — product (ADMIN-231 author)
 - [ ] **Q11.** Which date exactly does "next quarter" mean? — product (ADMIN-231 author)
+- [ ] **Q12.** Mockups and UI texts for the palette: dialog title, input placeholder, group names, empty and error states, and the shortcuts help entry. — designer (TBD)

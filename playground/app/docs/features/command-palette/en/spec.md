@@ -58,13 +58,13 @@ sequenceDiagram
 
 - `src/hooks/useHotkey.ts` — add option `allowInInputs` (default `false`). The palette shortcut uses `{ meta: true, allowInInputs: true }` so Cmd/Ctrl+K also works while the cursor is in a text field; `?` keeps today's behavior.
 - `src/components/layout/Header.tsx` — registers the Cmd/Ctrl+K hotkey, owns the palette `open` state, renders `CommandPalette`, tracks `command_palette_opened`. The header search form stays as is.
-- `src/components/command-palette/CommandPalette.tsx` — new. Renders inside `Dialog`: a text input and one list grouped as Recent / Sections / Orders / Customers. ↑/↓ move the active item, Enter or click selects, Esc closes (Radix). Implements the ARIA combobox + listbox pattern (`role="combobox"`, `aria-activedescendant`). On select: `navigate(path)`, close, track.
+- `src/components/command-palette/CommandPalette.tsx` — new. Renders inside `Dialog`: a text input and one list grouped as Recent / Sections / Orders / Customers. ↑/↓ move the active item, Enter or click selects, Esc closes (Radix). Implements the ARIA combobox + listbox pattern (`role="combobox"`, `aria-activedescendant`). On select: `navigate(path)`, close, track. UI texts (dialog title, placeholder, group names, empty and error states) come with the design (PRD Q12); until then the palette uses provisional English texts, hidden behind the build flag.
 - `src/components/command-palette/useSectionCommands.ts` — new. `routes.filter(r => r.inNav && has(r.permission))`, the same rule as `Sidebar`, matched against `title` with a case-insensitive substring match. Returns nothing until `loaded` is `true`.
 - `src/components/command-palette/useEntitySearch.ts` — new. TanStack Query with key `["palette-search", q]` calling `searchEntities(q, 5, signal)`, enabled when `q.trim().length >= 2`, input debounced by 150 ms; the query `signal` aborts outdated requests. Drops order hits unless `has("orders:view")` and customer hits unless `has("customers:view")` (assumption, see PRD Q4).
 - `src/components/command-palette/recentItems.ts` — new. Read/write helpers over `localStorage` plus `useRecordRecent(type, id)`.
 - `src/pages/OrderDetailsPage.tsx`, `src/pages/CustomerDetailsPage.tsx` — call `useRecordRecent("order", orderId)` / `useRecordRecent("customer", customerId)` on mount, so any visit to a detail page counts as "opened" (assumption, see PRD Q5).
 - `src/auth/usePermissions.ts` — also return `userId` (from the already-loaded `/api/me`) to key the recent items.
-- `src/components/layout/ShortcutsHelp.tsx` — add the Cmd/Ctrl+K entry to `SHORTCUTS`; wording comes with the design (PRD Q7 owner).
+- `src/components/layout/ShortcutsHelp.tsx` — add the Cmd/Ctrl+K entry to `SHORTCUTS`; wording comes with the design (PRD Q12).
 - `src/analytics/track.ts` — add `command_palette_opened` and `command_palette_item_selected` to `EventName`.
 
 ### Data model
@@ -118,10 +118,10 @@ Only type and id are stored, no customer names or emails (assumption, see PRD Q6
 ## Edge cases & error handling
 
 - Query shorter than 2 characters → only sections (or recent items if empty); no API call.
-- `GET /api/search` fails or times out → sections still shown; the Orders/Customers group shows an error state (wording per design); the palette stays usable.
+- `GET /api/search` fails or times out → sections still shown; the Orders/Customers group shows an error state (wording per design, PRD Q12); the palette stays usable.
 - Responses arrive out of order → TanStack Query aborts the outdated request through `signal`; only results for the current query are shown.
 - Permissions not loaded yet (`loaded === false`) → no sections and no records; they appear once `/api/me` resolves.
-- No matches → empty state (wording per design).
+- No matches → empty state (wording per design, PRD Q12).
 - Recent item the agent can no longer access (permission removed) → hidden when the palette renders.
 - `localStorage` unavailable, full or holding invalid JSON → recent items are skipped and the stored value is reset; the rest of the palette works.
 - Cmd/Ctrl+K while the palette is already open → focus returns to the input; it does not open a second dialog.
@@ -137,13 +137,14 @@ Only type and id are stored, no customer names or emails (assumption, see PRD Q6
 
 ## Testing plan
 
+- Setup: the repo has no tests and no Vitest config yet. Add `vitest.config.ts` with the `jsdom` environment and `jsdom` as a dev dependency so component tests can render.
 - Unit (Vitest): `useSectionCommands` matching and permission filtering (R2, R3); `recentItems` ordering, deduplication, cap of 5, per-user keys, invalid JSON (R5); `useHotkey` with `allowInInputs`.
 - Component (Testing Library, `searchEntities` mocked): Cmd+K and Ctrl+K open the palette, also from a focused input, and Esc closes it (R1); arrow keys + Enter and click navigate to the section, order and customer pages (R2, R4); hits dropped without `orders:view` / `customers:view`; empty input shows recent items (R5); error and empty states.
 - Manual: macOS and Windows on the browsers the support team uses, checking that the browser's own Ctrl+K / Cmd+K doesn't fire.
 
 ## Rollout & rollback
 
-The app has no feature-flag mechanism, so the palette is gated by a build-time Vite variable `VITE_FEATURE_COMMAND_PALETTE`: when off, the hotkey isn't registered and nothing is rendered. Steps: enable on staging → enable in production for everyone. The header search and the search results page stay unchanged, so agents keep the old path. Rollback: rebuild and deploy with the variable off. Stored recent items are harmless when the feature is off.
+The app has no feature-flag mechanism, so the palette is gated by a build-time Vite variable `VITE_FEATURE_COMMAND_PALETTE`: when off, the hotkey isn't registered and nothing is rendered. Steps: enable on staging → enable in production for everyone. The header search and the search results page stay unchanged, so agents keep the old path (assumption, see PRD Q9). Rollback: rebuild and deploy with the variable off. Stored recent items are harmless when the feature is off.
 
 ## Observability
 
@@ -153,9 +154,9 @@ The app has no feature-flag mechanism, so the palette is gated by a build-time V
 
 ## Open questions
 
-- [ ] Does `GET /api/search` enforce `orders:view` / `customers:view` on the server, or does it return hits to anyone? — backend team
-- [ ] Does `limit` in `GET /api/search` apply per type or to orders and customers combined? — backend team
-- [ ] Can `GET /api/search` handle the extra load of search-as-you-type from all agents? — backend team
-- [ ] Is there a runtime feature-flag service we should use instead of a build-time variable? — frontend team
-- [ ] Can the analytics collector compute the gap between two events in the same session, needed for the time metric and its baseline? — analytics team
-- [ ] Which engineer owns this Spec? — frontend team lead
+- [ ] **Q1.** Does `GET /api/search` enforce `orders:view` / `customers:view` on the server, or does it return hits to anyone? — backend team
+- [ ] **Q2.** Does `limit` in `GET /api/search` apply per type or to orders and customers combined? — backend team
+- [ ] **Q3.** Can `GET /api/search` handle the extra load of search-as-you-type from all agents? — backend team
+- [ ] **Q4.** Is there a runtime feature-flag service we should use instead of a build-time variable? — frontend team
+- [ ] **Q5.** Can the analytics collector compute the gap between two events in the same session, needed for the time metric and its baseline? — analytics team
+- [ ] **Q6.** Which engineer owns this Spec? — frontend team lead
