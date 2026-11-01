@@ -36,9 +36,9 @@ Bundled files (paths relative to this skill's directory):
 
 ### 1. Find where docs live in this project
 
-Look before you create anything, so new docs match what the team already has:
+Look before you create anything, so new docs match what the team already has. "The project" is the codebase the feature belongs to, the directory you're working in. In a monorepo, it's the package or app the feature lives in.
 
-- Check the project's `CLAUDE.md` / `README` for a stated docs location.
+- Check that project's `CLAUDE.md` / `README` for a stated docs location.
 - Search for existing feature docs (e.g. `**/prd.md`, `**/spec.md`, `docs/features/`). If they exist, follow their location, naming and any deviations from the templates — the project's convention wins over this skill's defaults.
 - Otherwise use `docs/features/<feature-slug>/en/` and `.../ru/`, and tell the user where you put them.
 - The bilingual mirror in `en/` + `ru/` folders is not a convention a project can opt out of. If a project's existing feature docs are in one language or flat in the feature folder, move them into `en/` (or `ru/`) and create the missing mirror when you touch them. Tell the user you did.
@@ -49,6 +49,7 @@ Look before you create anything, so new docs match what the team already has:
 
 - **New PRD** — the usual starting point.
 - **New Spec** — read the PRD first. If there is no PRD, ask whether to write a short one first; if the user declines (small or purely technical change), write the Spec and put the problem and requirements into its Context section so the Spec still stands on its own.
+- **PRD and Spec together**: when the user asks for both, write the PRD first and then the Spec from it, in the same pass. Don't stop between them to ask for a PRD review unless the user wants that.
 - **Update**: edit the existing files in place, both languages in the same pass. Bump `updated` in both and keep requirement IDs stable (see below). Run the mirror check *before* editing too. If the pair is already out of sync, someone edited one side by hand: see *Bilingual mirror* for how to resolve it.
 - **Review**: read the doc(s) and report against the checklist at the end of this file, including mirror problems. Don't rewrite unless asked.
 
@@ -56,14 +57,17 @@ Look before you create anything, so new docs match what the team already has:
 
 A feature doc is only useful if it is true. Use what's already available first: the conversation, tickets or notes the user shared, the existing PRD, and — for a Spec — the actual codebase. A Spec should be grounded in real modules, files, tables and endpoints, so explore the relevant code before designing.
 
-Then ask the user for what's still missing. Batch your questions (a handful at a time, most important first) instead of asking one by one. For PRDs the gaps are usually: who exactly has the problem, how we know it's a problem, what success looks like in numbers, and what is explicitly out of scope.
+Then ask the user for what's still missing. Ask once, before drafting: a single batch, most important first, limited to questions whose answers would change the content. For PRDs the gaps are usually: who exactly has the problem, how we know it's a problem, what success looks like in numbers, and what is explicitly out of scope.
 
-If the user doesn't know something, don't fill the gap with a plausible guess — especially metrics, baselines, dates and owners. Write it as an item under **Open questions** (with who should answer it, if known). A visible gap gets resolved; a fabricated number gets shipped.
+Unanswered questions don't block the draft. If the user doesn't know, tells you to go ahead, or isn't available to ask, write the docs anyway and record every unanswered question under **Open questions**, with who should answer it if known.
+
+Never fill a gap with a plausible guess, especially metrics, baselines, dates and owners. A visible gap gets resolved; a fabricated number gets shipped. Record dates the way the source states them ("next quarter"). Convert a relative date to a calendar date only when the conversion is unambiguous.
 
 ### 4. Write from the template
 
-- Fill the frontmatter completely. Use today's date for `created`/`updated`. Default `status: draft`.
+- Fill every frontmatter field. Use today's date for `created`/`updated` and the default `status: draft`. When a value is unknown, typically `owner` or `reviewers`, write `TBD` (or `reviewers: []`) and add an open question for it. Never write a guessed name.
 - Sections marked *(optional)* in the template: drop them when they genuinely don't apply. Required sections stay; if one is truly empty, say so in one line (e.g. "No new dependencies.") so reviewers know it was considered.
+- Leave no template scaffolding in the finished doc. Placeholder text in angle brackets, guidance paragraphs, *(optional)* markers and frontmatter comments all go.
 - Size the doc to the feature. A small feature's PRD can fit on one screen. Prefer tables and short bullets over prose; nobody reads walls of text in review.
 - Write the English version first, then produce the Russian mirror from the `assets/templates/ru/` template. Don't write the two independently: two separate drafts drift apart in substance.
 - Link the documents. In both languages PRD `spec:` is `./spec.md` and Spec `prd:` is `./prd.md`, since the sibling sits in the same language folder. Each file's `mirror:` points to its other-language twin: `../ru/prd.md` from `en/`, `../en/prd.md` from `ru/`.
@@ -78,7 +82,7 @@ python3 <skill-dir>/scripts/check_mirror.py docs/features/<feature-slug>
 
 If `python3` isn't available, tell the user and do the structural comparison by hand, using the list below.
 
-The script catches structural drift: headings, table rows, list items, checkboxes, requirement IDs, code identifiers, links, Mermaid blocks and frontmatter. It can't judge meaning, so also re-read both versions side by side for content that differs. Then go through the checklist below, fix what you can, and finish with a short message: where the files are, what's still open (the Open questions), and the natural next step (e.g. "PRD ready for review → then the Spec").
+The script catches structural drift: headings, table rows, list items, checkboxes, requirement IDs, code identifiers, links, Mermaid blocks and frontmatter. It can't judge meaning, so also re-read both versions side by side for content that differs. Then go through the checklist below, fix what you can, and finish with a short message: where the files are, what's still open (the Open questions), and the natural next step (e.g. who needs to answer the open questions before review).
 
 ## Conventions
 
@@ -89,6 +93,18 @@ PRD requirements are numbered `R1`, `R2`, … and the Spec's *Requirements cover
 IDs are permanent: never renumber. A dropped requirement stays in the table marked ~~struck through~~ with a short reason; new ones get the next free number. Other docs, tickets and tests may already reference them.
 
 Priority uses MoSCoW: **Must** / **Should** / **Could**. Each requirement gets at least one acceptance criterion phrased so a tester could check it.
+
+In *Requirements coverage*, each row says how the design meets the requirement. If the design meets it only in part, or not at all, start the cell with **Partial:** or **Not covered:** and say what's missing. Every such gap also goes to Open questions.
+
+### When the PRD is silent
+
+Sometimes the Spec needs a product decision the PRD doesn't make: a limit, a default, or who can see what. In that case:
+
+- Choose the most conservative option.
+- In the Spec, state it as an assumption that points to the question.
+- Put the question in the PRD's Open questions, not the Spec's: the PRD is where product decisions get made, and the answer may change a requirement.
+
+The Spec's Open questions are for technical unknowns only.
 
 ### Status lifecycle
 
@@ -102,7 +118,13 @@ English is the primary version (`en/`, `lang: en`). Russian is its mirror: the s
 
 - **Same structure.** Same headings in the same order, same tables with the same rows in the same order, same list items, same checkbox states. Use the headings from the `assets/templates/ru/` templates exactly, so terminology is consistent across all features.
 - **Same facts.** Every number, date, name, status, priority and decision appears in both. Never add a clarification, example or caveat to only one side; if it's worth saying, say it in both.
-- **Not translated:** requirement IDs (`R1`), priorities (`Must` / `Should` / `Could`), anything in backticks (code, paths, endpoints, events, flags, table and field names), frontmatter keys and values other than `title`, people's names, and product or UI names as they appear in the product and in Figma.
+- **Not translated:**
+  - requirement IDs (`R1`) and priorities (`Must` / `Should` / `Could`);
+  - anything in backticks: code, paths, endpoints, events, flags, table and field names;
+  - fenced code blocks other than Mermaid, which stay byte-identical, comments included;
+  - frontmatter keys, and all frontmatter values except `title`;
+  - people's names;
+  - UI text such as screen names, button labels, messages and empty states. Quote it exactly as the product shows it, or will show it, in the product's language. It's product content, not doc prose.
 - **Diagrams.** The same Mermaid diagram on both sides: identical node IDs, participants and arrows. Only the human-readable labels are translated, and identifiers inside labels stay as they are.
 - **Links.** Identical links in the same places. Relative links to sibling docs (`./prd.md`) stay the same and resolve within each language folder.
 - **Frontmatter.** Identical except `title`, `lang` and `mirror`. `status` and `updated` always change together on both sides.
@@ -137,11 +159,13 @@ Record significant design choices in the Spec's *Alternatives & decisions* secti
 - [ ] Problem names a concrete user/audience and gives some evidence, not just an assertion.
 - [ ] Non-goals exist and are specific.
 - [ ] Every requirement has an ID, priority and checkable acceptance criteria.
-- [ ] No implementation details (tech choices, schemas, endpoints).
-- [ ] Success metrics have a target and a way to measure; unknown baselines are open questions, not guesses.
+- [ ] No implementation details (tech choices, schemas, endpoints). Naming an existing analytics event or dashboard as the measurement source is fine.
+- [ ] Each success metric has a way to measure and a target. An unknown baseline or target is an open question, not a guess.
+- [ ] Product questions the Spec depends on are in the PRD's Open questions.
 
 **Spec**
-- [ ] Every PRD requirement appears in *Requirements coverage*; nothing is silently uncovered.
+- [ ] Every PRD requirement appears in *Requirements coverage*. Gaps are marked **Partial:** or **Not covered:**, never left silent.
+- [ ] Every assumption made where the PRD is silent points to a PRD open question.
 - [ ] *Current state* reflects the real code, with paths where useful.
 - [ ] At least one alternative is considered for each non-obvious decision.
 - [ ] Failure modes / edge cases are addressed.
@@ -149,7 +173,8 @@ Record significant design choices in the Spec's *Alternatives & decisions* secti
 - [ ] Doesn't redefine goals or requirements — conflicts are raised as open questions.
 
 **Both**
-- [ ] Frontmatter complete; `prd`/`spec` links point at each other.
+- [ ] Frontmatter complete, with `TBD` for unknowns; `prd`/`spec` links point at each other.
+- [ ] No template scaffolding left: placeholders, guidance text, *(optional)* markers, frontmatter comments.
 - [ ] Any diagrams are Mermaid blocks with valid syntax and names that match the text.
 - [ ] `check_mirror.py` passes for the feature folder, and a side-by-side read finds no difference in meaning between EN and RU.
 - [ ] Open questions list everything unresolved, with an owner where known.

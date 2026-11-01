@@ -47,6 +47,8 @@ links: []                # tickets, PRs, designs, related docs
 |--------|--------------------|---------|
 | R1 | <mechanism> | <link to section above> |
 
+<Start the cell with **Partial:** or **Not covered:** when the design doesn't fully meet the requirement, and say what's missing.>
+
 ## Alternatives & decisions
 
 | Decision | Options considered | Chosen | Why |
