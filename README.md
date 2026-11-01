@@ -64,6 +64,17 @@ ln -s "$(pwd)/skills/feature-docs" ~/.claude/skills/feature-docs
 cp -r skills/feature-docs /path/to/project/.claude/skills/
 ```
 
+### Maintaining
+
+The skill's files depend on each other. A convention change, such as a new section or frontmatter field, usually touches all of them at once:
+
+- both language templates;
+- both language versions of the example;
+- the checklist in `SKILL.md`;
+- `LANG_SPECIFIC_KEYS` in `check_mirror.py`, if the new field is allowed to differ between languages.
+
+Templates and the example are EN/RU mirrors themselves and must pass `check_mirror.py skills/feature-docs`.
+
 ### Use
 
 Just describe what you need. The skill triggers on requests like "write a PRD for …", "сделай спеку по этой фиче", "review the spec in docs/features/sso-login". You can also call it explicitly: `/feature-docs` when installed as a symlink or copy, `/feature-docs:feature-docs` when installed as a plugin.
