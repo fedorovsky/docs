@@ -64,10 +64,10 @@ sequenceDiagram
 - `src/subscribers/requestHeaders.ts`, `src/subscribers/analyticsCollector.ts`, `src/subscribers/gameConfig.ts` — new: the three projections of *Subscriber fields*.
 - `src/ui/ConsentBlock.tsx` — new: one component for both blocks (`variant: 'initial' | 'settings'`); two toggles, "Save", "Accept all", pending and error state.
 - `src/ui/MonitoringBlock.tsx` — new: a recorder's state as formatted JSON plus the update time.
-- `src/ui/StartPanel.tsx` — new: the debug start panel at the top of the page: a `consentRequired` switch (on by default) and a "Start" button, disabled while a start is pending.
+- `src/ui/StartPanel.tsx` — new: the debug start panel at the top of the page: a `consentRequired` switch (on by default), a "first start" switch (off by default) and a "Start" button, disabled while a start is pending.
 - `src/ui/ConfigBlock.tsx` — new: the observer's current seven fields as formatted JSON, at the top of the page.
-- `src/App.tsx` — the page: the start panel; on "Start" creates the bridge through `createBridge(consentRequired)` and a new `identityService`, calls `start()` and keeps its pending and error state; once the observer has fields, the config block, the two consent blocks by their visibility rules and the three monitoring blocks.
-- `src/main.tsx` — wiring: creates the observer and the three recorders, subscribes the recorders and renders `App` with `createBridge = (consentRequired) => createFakeIdentityBridge({ consentRequired })`.
+- `src/App.tsx` — the page: the start panel; on "Start" creates the bridge through `createBridge(consentRequired, firstStart)` and a new `identityService`, calls `start()` and keeps its pending and error state; once the observer has fields, the config block, the two consent blocks by their visibility rules and the three monitoring blocks.
+- `src/main.tsx` — wiring: creates the observer and the three recorders, subscribes the recorders and renders `App` with `createBridge = (consentRequired, firstStart) => createFakeIdentityBridge({ consentRequired, forgetChoice: firstStart })`.
 
 #### Subscriber fields
 
@@ -130,7 +130,9 @@ interface ConsentRequest { marketing: ConsentStatus; analytics: ConsentStatus } 
 interface ConsentResponse { marketingTrackingId: string | null; analyticsTrackingId: string | null }
 ```
 
-Fake behaviour, `createFakeIdentityBridge({ consentRequired, delayMs = [300, 1000], random = Math.random, storage = localStorage })`:
+Fake behaviour, `createFakeIdentityBridge({ consentRequired, forgetChoice = false, delayMs = [300, 1000], random = Math.random, storage = localStorage })`:
+
+- `forgetChoice = true` removes the stored choice on creation, so the next `getConfig` behaves as a first start (PRD R12).
 
 - Every call waits a random `delayMs` and never fails (PRD R11).
 - `getConfig` with `consentRequired = true`: statuses and IDs from storage, or `NotDecided` / `null` when nothing is stored.
@@ -154,7 +156,7 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 | R9 | The three projections in *Subscriber fields* | Subscriber fields |
 | R10 | `ConfigBlock` on the observer and `MonitoringBlock` per recorder, re-rendered through `useSyncExternalStore` | Components & changes |
 | R11 | The fake with delay and `localStorage` | API / interfaces |
-| R12 | `StartPanel` and the start handling in `App`: a new fake bridge and service per "Start" | Components & changes |
+| R12 | `StartPanel` and the start handling in `App`: a new fake bridge and service per "Start"; `forgetChoice` for "first start" | Components & changes, API / interfaces |
 
 ## Alternatives & decisions
 
@@ -173,6 +175,7 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 - `start()` fails (the fake never fails here; the real bridge may) → the page shows "Could not load the config." and "Retry"; no subscriber is called; "Retry" starts again with the switch's current value.
 - "Start" pressed while a start is in flight → impossible, the button is disabled.
 - "Start" pressed again after a successful start → a new fake bridge and service; the observer gets the new config (a new `temporaryId` at least), so the subscribers are called; a failed restart leaves the previous state on the page and shows the error.
+- "Start" with "first start" on → the stored choice is gone before `getConfig`; with `consentRequired` on both statuses are `NotDecided` and both IDs `null`, with it off new IDs are issued.
 - A save fails (the fake never fails; the real bridge may) → the service rejects, the observer is untouched, the block shows the error and keeps the toggles as the user set them; "Save" and "Accept all" are enabled again.
 - A save that changes nothing (both already `Accepted`, both toggles on) → the fake returns the same IDs, `observer.set` sees no change, no subscriber is called, monitoring times stay.
 - Both consents `Declined`, both toggles off, "Save" → both stay `Declined` with `null` IDs; no change, no subscriber call.
@@ -192,7 +195,7 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 
 - Unit (Vitest): `identityObserver` (first set calls, a changed field calls, an identical set doesn't, a late subscriber is called); `fakeIdentityBridge` (first start, `consentRequired = false`, the ID rules of R6, persistence through a fake storage); `identityService` (start and save paths, a failure leaves the observer untouched); the three projections (both `consentRequired` modes, `deviceId` always in the headers and only without `consentRequired` elsewhere, a `null` header dropped, `null` kept elsewhere).
 - Component (Vitest + Testing Library): `ConsentBlock` (visibility per variant, an off toggle saves `Declined`, "Accept all", disabled while pending, error text with toggles kept; R3–R5, R7); `MonitoringBlock` (state and time update) and `ConfigBlock` (all seven fields, re-rendered on change; R10).
-- Component (Vitest + Testing Library): `App` (nothing but the start panel before "Start", start in both modes, restart in the other mode, failed start with "Retry"; R12).
+- Component (Vitest + Testing Library): `App` (nothing but the start panel before "Start", start in both modes, restart in the other mode, "first start" forgets the choice, failed start with "Retry"; R12).
 - Manual, in the browser, in both modes: the PRD acceptance criteria of R1–R12 except R7, including a revoke-and-accept cycle and a reload.
 
 ## Rollout & rollback

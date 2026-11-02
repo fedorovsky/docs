@@ -14,6 +14,6 @@ for (const recorder of recorders) observer.subscribe(recorder.handle);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App observer={observer} recorders={recorders} createBridge={(consentRequired) => createFakeIdentityBridge({ consentRequired })} />
+    <App observer={observer} recorders={recorders} createBridge={(consentRequired, firstStart) => createFakeIdentityBridge({ consentRequired, forgetChoice: firstStart })} />
   </StrictMode>,
 );

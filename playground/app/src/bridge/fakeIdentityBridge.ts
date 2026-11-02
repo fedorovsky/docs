@@ -7,10 +7,13 @@ export const DEVICE_ID = 'device-0001';
 export interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem(key: string): void;
 }
 
 export interface FakeIdentityBridgeOptions {
   consentRequired: boolean;
+  /** Forget the stored choice on creation, so the next getConfig is a first start (PRD R12). */
+  forgetChoice?: boolean;
   /** [min, max] in milliseconds. The fake never fails: error handling is exercised with stubs in tests. */
   delayMs?: [number, number];
   random?: () => number;
@@ -54,6 +57,7 @@ function defaultStorage(): StorageLike | null {
 export function createFakeIdentityBridge(options: FakeIdentityBridgeOptions): IdentityBridge {
   const {
     consentRequired,
+    forgetChoice = false,
     delayMs = [300, 1000],
     random = Math.random,
     newId = () => crypto.randomUUID(),
@@ -62,6 +66,14 @@ export function createFakeIdentityBridge(options: FakeIdentityBridgeOptions): Id
 
   // Falls back to memory when storage is unavailable or corrupt.
   let memory: StoredChoice = EMPTY;
+
+  if (forgetChoice && storage) {
+    try {
+      storage.removeItem(STORAGE_KEY);
+    } catch {
+      // storage unavailable: memory is already empty
+    }
+  }
 
   function read(): StoredChoice {
     if (storage) {

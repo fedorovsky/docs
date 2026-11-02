@@ -34,7 +34,7 @@ function setup(bridge: Partial<IdentityBridge> = {}) {
   const observer = createIdentityObserver();
   const recorders = [createRequestHeadersSubscriber(), createAnalyticsCollectorSubscriber(), createGameConfigSubscriber()];
   for (const recorder of recorders) observer.subscribe(recorder.handle);
-  const createBridge = vi.fn((consentRequired: boolean): IdentityBridge => ({
+  const createBridge = vi.fn((consentRequired: boolean, _firstStart: boolean): IdentityBridge => ({
     getConfig: vi.fn().mockResolvedValue(consentRequired ? undecided : { ...accepted, temporaryId: 'tmp-2' }),
     updateConsent: vi.fn(),
     ...bridge,
@@ -58,7 +58,7 @@ test('before Start only the start panel is shown, with consentRequired on', () =
 test('Start with consentRequired = true and NotDecided: config, both blocks and three monitoring blocks', async () => {
   const { user, createBridge } = setup();
   await user.click(startButton());
-  expect(createBridge).toHaveBeenCalledWith(true);
+  expect(createBridge).toHaveBeenCalledWith(true, false);
   expect(await screen.findByRole('heading', { name: 'Tracking consent' })).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Tracking settings' })).toBeInTheDocument();
   const config = screen.getByRole('region', { name: 'Config' });
@@ -81,7 +81,7 @@ test('Start with the switch off: no consent blocks, monitoring shows both IDs an
   const { user, createBridge } = setup();
   await user.click(consentSwitch());
   await user.click(startButton());
-  expect(createBridge).toHaveBeenCalledWith(false);
+  expect(createBridge).toHaveBeenCalledWith(false, false);
   const headers = await screen.findByRole('region', { name: 'Request headers' });
   expect(headers).toHaveTextContent('"X-Device-Id": "device-0001"');
   expect(headers).toHaveTextContent('"X-Analytics-Tracking-Id": "a-1"');
@@ -99,7 +99,7 @@ test('Start again in the other mode switches the page without a reload', async (
   await user.click(consentSwitch());
   await user.click(startButton());
   expect(await screen.findByRole('heading', { name: 'Tracking settings' })).toBeInTheDocument();
-  expect(createBridge).toHaveBeenNthCalledWith(2, true);
+  expect(createBridge).toHaveBeenNthCalledWith(2, true, false);
   expect(screen.getByRole('region', { name: 'Config' })).toHaveTextContent('"consentRequired": true');
 });
 
@@ -133,4 +133,14 @@ test('a failed start shows the error and Retry loads again', async () => {
   await user.click(screen.getByRole('button', { name: 'Retry' }));
   expect(await screen.findByRole('heading', { name: 'Tracking consent' })).toBeInTheDocument();
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+test('the first start switch is off by default and is passed to createBridge', async () => {
+  const { user, createBridge } = setup();
+  const firstStart = screen.getByRole('switch', { name: 'first start' });
+  expect(firstStart).not.toBeChecked();
+  await user.click(firstStart);
+  await user.click(startButton());
+  expect(createBridge).toHaveBeenCalledWith(true, true);
+  expect(await screen.findByRole('heading', { name: 'Tracking consent' })).toBeInTheDocument();
 });

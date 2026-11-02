@@ -7,6 +7,7 @@ function memoryStorage(): StorageLike & { data: Map<string, string> } {
     data,
     getItem: (key) => data.get(key) ?? null,
     setItem: (key, value) => void data.set(key, value),
+    removeItem: (key) => void data.delete(key),
   };
 }
 
@@ -112,6 +113,9 @@ test('unreadable storage behaves as nothing stored and keeps the choice in memor
     setItem: () => {
       throw new Error('quota');
     },
+    removeItem: () => {
+      throw new Error('quota');
+    },
   };
   const a = bridge({ storage: broken });
   const config = await a.getConfig();
@@ -119,4 +123,18 @@ test('unreadable storage behaves as nothing stored and keeps the choice in memor
   const saved = await a.updateConsent({ marketing: Accepted, analytics: Declined });
   const after = await a.getConfig();
   expect(after.marketingTrackingId).toBe(saved.marketingTrackingId);
+});
+
+test('forgetChoice drops the stored choice, so the next start is a first start', async () => {
+  const storage = memoryStorage();
+  await bridge({ storage }).updateConsent({ marketing: Accepted, analytics: Accepted });
+  expect(storage.data.has(STORAGE_KEY)).toBe(true);
+  const config = await bridge({ storage, forgetChoice: true }).getConfig();
+  expect(config).toMatchObject({
+    marketingConsentStatus: NotDecided,
+    analyticsConsentStatus: NotDecided,
+    marketingTrackingId: null,
+    analyticsTrackingId: null,
+  });
+  expect(storage.data.has(STORAGE_KEY)).toBe(false);
 });

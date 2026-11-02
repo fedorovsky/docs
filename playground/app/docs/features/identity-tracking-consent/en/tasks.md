@@ -61,6 +61,12 @@ Delivers the identity flow of the [Spec](./spec.md): scaffold, fake API, observe
   - Change: render a recorder's state as JSON with its update time through `useSyncExternalStore` (Spec *Components & changes*); not rendered by `App` yet
   - Done when: a test shows the block re-renders with the new state and time after the recorder is called
   - Depends on: T5
+- [x] **T15. Add the "first start" switch**
+  - Covers: R12
+  - Files: `src/bridge/fakeIdentityBridge.ts`, `src/bridge/fakeIdentityBridge.test.ts`, `src/ui/StartPanel.tsx`, `src/App.tsx`, `src/App.test.tsx`, `src/main.tsx`
+  - Change: the `forgetChoice` option of the fake and the "first start" switch on the start panel passed through `createBridge` (Spec *Components & changes*, *API / interfaces*)
+  - Done when: a fake test shows a stored choice gone with `forgetChoice`; an `App` test shows `createBridge` called with the switch's value; in the browser a start with "first start" on brings the initial block back
+  - Depends on: T13
 - [x] **T8. Wire the page**
   - Covers: R1, R2, R3, R4, R8, R10
   - Files: `src/main.tsx`, `src/App.tsx`, `src/App.test.tsx`
@@ -85,6 +91,12 @@ Delivers the identity flow of the [Spec](./spec.md): scaffold, fake API, observe
   - Change: the headers projection adds `X-Device-Id` in both `consentRequired` modes (Spec *Subscriber fields*)
   - Done when: tests show `X-Device-Id` with `consentRequired = true` and the other two projections still without `deviceId`
   - Depends on: T5
+- [x] **T15. Add the "first start" switch**
+  - Covers: R12
+  - Files: `src/bridge/fakeIdentityBridge.ts`, `src/bridge/fakeIdentityBridge.test.ts`, `src/ui/StartPanel.tsx`, `src/App.tsx`, `src/App.test.tsx`, `src/main.tsx`
+  - Change: the `forgetChoice` option of the fake and the "first start" switch on the start panel passed through `createBridge` (Spec *Components & changes*, *API / interfaces*)
+  - Done when: a fake test shows a stored choice gone with `forgetChoice`; an `App` test shows `createBridge` called with the switch's value; in the browser a start with "first start" on brings the initial block back
+  - Depends on: T13
 - [ ] ~~**T10. Apply the final design and copy**~~ Dropped 2026-11-02: no mockups or localisation for now (PRD Q4)
 - [ ] **T11. Release**
   - Covers: `rollout`
@@ -111,3 +123,9 @@ Delivers the identity flow of the [Spec](./spec.md): scaffold, fake API, observe
   - Change: the headers projection adds `X-Device-Id` in both `consentRequired` modes (Spec *Subscriber fields*)
   - Done when: tests show `X-Device-Id` with `consentRequired = true` and the other two projections still without `deviceId`
   - Depends on: T5
+- [x] **T15. Add the "first start" switch**
+  - Covers: R12
+  - Files: `src/bridge/fakeIdentityBridge.ts`, `src/bridge/fakeIdentityBridge.test.ts`, `src/ui/StartPanel.tsx`, `src/App.tsx`, `src/App.test.tsx`, `src/main.tsx`
+  - Change: the `forgetChoice` option of the fake and the "first start" switch on the start panel passed through `createBridge` (Spec *Components & changes*, *API / interfaces*)
+  - Done when: a fake test shows a stored choice gone with `forgetChoice`; an `App` test shows `createBridge` called with the switch's value; in the browser a start with "first start" on brings the initial block back
+  - Depends on: T13

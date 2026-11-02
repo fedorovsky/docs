@@ -64,10 +64,10 @@ sequenceDiagram
 - `src/subscribers/requestHeaders.ts`, `src/subscribers/analyticsCollector.ts`, `src/subscribers/gameConfig.ts` — новые: три проекции из раздела «Поля подписчиков».
 - `src/ui/ConsentBlock.tsx` — новый: один компонент для обоих блоков (`variant: 'initial' | 'settings'`); два переключателя, "Save", "Accept all", состояния ожидания и ошибки.
 - `src/ui/MonitoringBlock.tsx` — новый: состояние рекордера в виде форматированного JSON плюс время обновления.
-- `src/ui/StartPanel.tsx` — новый: отладочная панель старта наверху страницы: переключатель `consentRequired` (по умолчанию включён) и кнопка "Start", отключённая, пока старт выполняется.
+- `src/ui/StartPanel.tsx` — новый: отладочная панель старта наверху страницы: переключатель `consentRequired` (по умолчанию включён), переключатель "first start" (по умолчанию выключен) и кнопка "Start", отключённая, пока старт выполняется.
 - `src/ui/ConfigBlock.tsx` — новый: текущие семь полей обсервера в виде форматированного JSON, наверху страницы.
-- `src/App.tsx` — страница: панель старта; по "Start" создаёт бридж через `createBridge(consentRequired)` и новый `identityService`, вызывает `start()` и держит его состояния ожидания и ошибки; как только у обсервера есть поля, показывает блок конфига, два блока согласия по правилам видимости и три блока мониторинга.
-- `src/main.tsx` — сборка: создаёт обсервер и три рекордера, подписывает рекордеры и рендерит `App` с `createBridge = (consentRequired) => createFakeIdentityBridge({ consentRequired })`.
+- `src/App.tsx` — страница: панель старта; по "Start" создаёт бридж через `createBridge(consentRequired, firstStart)` и новый `identityService`, вызывает `start()` и держит его состояния ожидания и ошибки; как только у обсервера есть поля, показывает блок конфига, два блока согласия по правилам видимости и три блока мониторинга.
+- `src/main.tsx` — сборка: создаёт обсервер и три рекордера, подписывает рекордеры и рендерит `App` с `createBridge = (consentRequired, firstStart) => createFakeIdentityBridge({ consentRequired, forgetChoice: firstStart })`.
 
 #### Поля подписчиков
 
@@ -130,7 +130,9 @@ interface ConsentRequest { marketing: ConsentStatus; analytics: ConsentStatus } 
 interface ConsentResponse { marketingTrackingId: string | null; analyticsTrackingId: string | null }
 ```
 
-Поведение фейка, `createFakeIdentityBridge({ consentRequired, delayMs = [300, 1000], random = Math.random, storage = localStorage })`:
+Поведение фейка, `createFakeIdentityBridge({ consentRequired, forgetChoice = false, delayMs = [300, 1000], random = Math.random, storage = localStorage })`:
+
+- `forgetChoice = true` удаляет сохранённый выбор при создании, поэтому следующий `getConfig` ведёт себя как первый старт (PRD R12).
 
 - Каждый вызов ждёт случайную задержку из `delayMs` и никогда не падает (PRD R11).
 - `getConfig` при `consentRequired = true`: статусы и ID из хранилища или `NotDecided` / `null`, если ничего не сохранено.
@@ -154,7 +156,7 @@ interface ConsentResponse { marketingTrackingId: string | null; analyticsTrackin
 | R9 | Три проекции из раздела «Поля подписчиков» | Поля подписчиков |
 | R10 | `ConfigBlock` на обсервере и `MonitoringBlock` на каждый рекордер, перерисовываются через `useSyncExternalStore` | Компоненты и изменения |
 | R11 | Фейк с задержкой и `localStorage` | API / интерфейсы |
-| R12 | `StartPanel` и обработка старта в `App`: новые фейковый бридж и сервис на каждый "Start" | Компоненты и изменения |
+| R12 | `StartPanel` и обработка старта в `App`: новые фейковый бридж и сервис на каждый "Start"; `forgetChoice` для "first start" | Компоненты и изменения, API / интерфейсы |
 
 ## Альтернативы и решения
 
@@ -173,6 +175,7 @@ interface ConsentResponse { marketingTrackingId: string | null; analyticsTrackin
 - `start()` падает (фейк здесь не падает никогда; настоящий бридж может) → страница показывает "Could not load the config." и "Retry"; ни один подписчик не вызывается; "Retry" запускает снова с текущим значением переключателя.
 - "Start" нажат, пока старт выполняется → невозможно, кнопка отключена.
 - "Start" нажат снова после успешного старта → новые фейковый бридж и сервис; обсервер получает новый конфиг (как минимум новый `temporaryId`), поэтому подписчики вызываются; упавший перезапуск оставляет на странице прежнее состояние и показывает ошибку.
+- "Start" с включённым "first start" → сохранённый выбор удалён до `getConfig`; при включённом `consentRequired` оба статуса `NotDecided` и оба ID `null`, при выключенном выдаются новые ID.
 - Сохранение падает (фейк никогда не падает; настоящий бридж может) → сервис отклоняет промис, обсервер не тронут, блок показывает ошибку и оставляет переключатели как их выставил пользователь; "Save" и "Accept all" снова включены.
 - Сохранение без изменений (оба уже `Accepted`, оба переключателя включены) → фейк возвращает те же ID, `observer.set` не видит изменений, ни один подписчик не вызывается, время в мониторинге не меняется.
 - Оба согласия `Declined`, оба переключателя выключены, "Save" → оба остаются `Declined` с `null` ID; изменений нет, подписчики не вызываются.
@@ -192,7 +195,7 @@ interface ConsentResponse { marketingTrackingId: string | null; analyticsTrackin
 
 - Unit (Vitest): `identityObserver` (первый set вызывает, изменённое поле вызывает, идентичный set не вызывает, поздний подписчик вызывается); `fakeIdentityBridge` (первый старт, `consentRequired = false`, правила ID из R6, сохранение через фейковое хранилище); `identityService` (пути старта и сохранения, сбой не трогает обсервер); три проекции (оба режима `consentRequired`, `deviceId` всегда в хедерах и только без `consentRequired` в остальных, хедер с `null` отброшен, `null` сохранён в остальных).
 - Компонентные (Vitest + Testing Library): `ConsentBlock` (видимость по варианту, выключенный переключатель сохраняет `Declined`, "Accept all", отключение на время ожидания, текст ошибки с сохранёнными переключателями; R3–R5, R7); `MonitoringBlock` (обновление состояния и времени) и `ConfigBlock` (все семь полей, перерисовка при изменении; R10).
-- Компонентные (Vitest + Testing Library): `App` (до "Start" только панель старта, старт в обоих режимах, перезапуск в другом режиме, упавший старт с "Retry"; R12).
+- Компонентные (Vitest + Testing Library): `App` (до "Start" только панель старта, старт в обоих режимах, перезапуск в другом режиме, "first start" забывает выбор, упавший старт с "Retry"; R12).
 - Ручные, в браузере, в обоих режимах: критерии приёмки R1–R12 из PRD кроме R7, включая цикл «отозвать и принять» и перезагрузку.
 
 ## Раскатка и откат

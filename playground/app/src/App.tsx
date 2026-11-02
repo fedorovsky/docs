@@ -14,7 +14,7 @@ export const LOAD_ERROR_TEXT = 'Could not load the config.';
 export interface AppProps {
   observer: IdentityObserver;
   recorders: Recorder<unknown>[];
-  createBridge(consentRequired: boolean): IdentityBridge;
+  createBridge(consentRequired: boolean, firstStart: boolean): IdentityBridge;
 }
 
 type StartState = 'idle' | 'pending' | 'failed' | 'ready';
@@ -22,11 +22,12 @@ type StartState = 'idle' | 'pending' | 'failed' | 'ready';
 export function App({ observer, recorders, createBridge }: AppProps) {
   const fields = useIdentity(observer);
   const [consentRequired, setConsentRequired] = useState(true);
+  const [firstStart, setFirstStart] = useState(false);
   const [service, setService] = useState<IdentityService | null>(null);
   const [start, setStart] = useState<StartState>('idle');
 
   function handleStart() {
-    const next = createIdentityService(createBridge(consentRequired), observer);
+    const next = createIdentityService(createBridge(consentRequired, firstStart), observer);
     setService(next);
     setStart('pending');
     next
@@ -40,7 +41,14 @@ export function App({ observer, recorders, createBridge }: AppProps) {
       <h1>Identity and tracking consent</h1>
       <div className="layout">
         <div>
-          <StartPanel consentRequired={consentRequired} onConsentRequiredChange={setConsentRequired} onStart={handleStart} pending={start === 'pending'} />
+          <StartPanel
+            consentRequired={consentRequired}
+            onConsentRequiredChange={setConsentRequired}
+            firstStart={firstStart}
+            onFirstStartChange={setFirstStart}
+            onStart={handleStart}
+            pending={start === 'pending'}
+          />
           {start === 'pending' && fields === null && <p className="muted">Loading…</p>}
           {start === 'failed' && (
             <section className="block" role="alert">
