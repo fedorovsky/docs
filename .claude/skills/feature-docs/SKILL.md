@@ -1,6 +1,6 @@
 ---
 name: feature-docs
-description: Writes, updates and reviews feature documentation as three mirrored English/Russian documents per feature — a PRD (why and what), a technical Spec (how) and a task list (order of work) — and implements a feature task by task from that list. Use whenever the user wants to describe, plan, document or design a feature; asks for a PRD, requirements, spec, tech spec, design doc, RFC or implementation plan; wants to turn a ticket, notes or a conversation into feature docs; wants to break a spec into tasks or implement from it; or asks to review, audit, check or update existing PRD/spec/tasks files or a docs folder, or to do the next task from such a list — even without the words "PRD" or "spec" (e.g. "let's write down what this feature should do", "audit the docs", "опиши фичу", "напиши ПРД", "сделай спеку", "разбей на задачи", "делай по задачам", "проведи аудит доков", "проверь доки", "обнови спеку", "следующая задача").
+description: Writes, updates and reviews feature documentation as three mirrored English/Russian documents per feature — a PRD (why and what), a technical Spec (how) and a task list (order of work) — and implements a feature task by task from that list. Use whenever the user wants to describe, plan, document or design a feature; asks for a PRD, requirements, spec, tech spec, design doc, RFC or implementation plan; wants to turn a ticket, notes or a conversation into feature docs; wants to break a spec into tasks or implement from it; or asks to review, audit, check or update existing PRD/spec/tasks files or a folder of feature docs, or to do the next task from such a list — even without the words "PRD" or "spec" (e.g. "let's write down what this feature should do", "audit the feature docs", "опиши фичу", "напиши ПРД", "сделай спеку", "разбей на задачи", "делай по задачам", "проведи аудит доков", "проверь доки", "обнови спеку", "следующая задача").
 ---
 
 # Feature docs
@@ -15,7 +15,7 @@ Three documents per feature, each in English and Russian:
 
 Keep the boundaries: each document is reviewed by different people at different times. A Spec that needs a requirement changed updates the PRD or raises an open question there; it never changes the requirement itself.
 
-Layout, fixed regardless of project conventions:
+Layout inside the feature folder, fixed regardless of project conventions (where that folder lives and what it is called follows the project, see *Locate the docs*):
 
 ```
 <feature-slug>/            # kebab-case: orders-csv-export
@@ -27,7 +27,7 @@ Bundled files, relative to this skill's directory:
 
 - `assets/templates/{en,ru}/{prd,spec,tasks}.md`: the document structure.
 - `references/examples/orders-csv-export/`: a worked example. Read the `en/` set once for depth and tone, and `ru/` before writing a mirror.
-- `scripts/check_mirror.py`: structural EN/RU comparison plus checks on each file (every ID defined once, tasks in execution order, blockers naming a question, *Covers* labels, no template scaffolding) and across a feature's documents (every PRD requirement in the Spec's coverage table and, unless **Not covered:**, in some task's *Covers*; every "PRD Qn" / "Spec Qn" defined). Run it (Python 3, no packages); don't read it.
+- `scripts/check_mirror.py`: structural EN/RU comparison (headings paired by template position, non-Mermaid code blocks byte-identical) plus checks on each file (headings are the template's, in its order, required sections present; `type`, dates and sibling links valid; every ID defined once, tasks in execution order, blockers naming a question, *Covers* labels, no template scaffolding) and across a feature's documents (every PRD requirement in the Spec's coverage table and, unless **Not covered:**, in some task's *Covers*; every "PRD Qn" / "Spec Qn" defined). Run it (Python 3, no packages); don't read it.
 
 ## Workflow
 

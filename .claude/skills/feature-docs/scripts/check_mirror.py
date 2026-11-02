@@ -26,8 +26,15 @@ documents too: every PRD requirement is in the Spec's coverage table, every
 requirement that is neither struck through nor "Not covered:" in the Spec is in
 some task's "Covers", and every "PRD Qn" / "Spec Qn" reference names a question
 that document defines.
+
+Headings are also checked against the skill's templates (next to this script):
+every H1/H2 and every template H3 must be one of the template's, in its order,
+with no required section missing. Frontmatter: `type` matches the file name,
+dates are YYYY-MM-DD with `updated` no earlier than `created`, and `prd:` /
+`spec:` / `tasks:` name files that exist.
 """
 
+import hashlib
 import os
 import re
 import sys
@@ -35,6 +42,10 @@ from collections import Counter
 from pathlib import Path
 
 LANGS = ("en", "ru")
+TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "assets" / "templates"
+SIBLING_KEYS = ("prd", "spec", "tasks")
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+OPTIONAL_SUFFIX_RE = re.compile(r"\s*\*\((?:optional|необязательно)\)\*\s*$")
 
 # Frontmatter keys whose values legitimately differ between languages.
 LANG_SPECIFIC_KEYS = {"title", "lang", "mirror"}
@@ -118,6 +129,78 @@ def parse_frontmatter(lines):
     return data, len(lines)
 
 
+def fence_key(fence):
+    """(lang, line count, content digest): Mermaid labels are translated, so only its size is compared."""
+    lang, lines = fence[1], fence[2]
+    digest = None if lang == "mermaid" else hashlib.sha1("\n".join(lines).encode("utf-8")).hexdigest()[:8]
+    return (lang, len(lines), digest)
+
+
+def template_headings(lang, doc_type):
+    """[(level, title, optional)] of the skill's template for this document, or None without one."""
+    path = TEMPLATES_DIR / lang / f"{doc_type}.md"
+    if not path.is_file():
+        return None
+    out = []
+    for line in body_lines(path):
+        m = HEADING_RE.match(line)
+        if m:
+            title = m.group(2).strip()
+            out.append((len(m.group(1)), OPTIONAL_SUFFIX_RE.sub("", title), bool(OPTIONAL_SUFFIX_RE.search(title))))
+    return out
+
+
+def lint_headings(path, frontmatter, titled):
+    """Headings against the template: H1 suffix, H1/H2 and template H3 titles, their order, required ones present."""
+    lang, _ = lang_of(path)
+    tpl = template_headings(lang, path.stem) if lang else None  # the file name picks the template; a wrong `type` is reported once, by lint_frontmatter
+    if not tpl:
+        return []
+    issues = []
+    h1 = [t for l, t, _ in tpl if l == 1]
+    if h1 and " — " in h1[0]:
+        suffix = " — " + h1[0].rsplit(" — ", 1)[1]
+        doc_h1 = [t for l, t in titled if l == 1]
+        if len(doc_h1) != 1 or not doc_h1[0].endswith(suffix):
+            issues.append(f"title heading must be one '# <name>{suffix}' (found {doc_h1})")
+    order = {(l, t): i for i, (l, t, _) in enumerate(tpl) if l > 1}
+    seen, last = set(), -1
+    for l, t in titled:
+        t = OPTIONAL_SUFFIX_RE.sub("", t)  # the marker itself is reported by lint_scaffolding
+        if l == 1:
+            continue
+        if (l, t) in order:
+            if (l, t) in seen:
+                issues.append(f"heading '{t}' appears twice")
+            elif order[(l, t)] < last:
+                issues.append(f"heading '{t}' is out of the template's order")
+            seen.add((l, t))
+            last = max(last, order[(l, t)])
+        elif l <= 2 or OPTIONAL_SUFFIX_RE.sub("", t) in {x[1] for x in tpl}:
+            issues.append(f"heading '{t}' is not in the {lang} {path.stem} template (headings are the template's, verbatim)")
+    for l, t, optional in tpl:
+        if l > 1 and not optional and (l, t) not in seen:
+            issues.append(f"required section '{t}' is missing (a section with nothing to say keeps one line)")
+    return issues
+
+
+def lint_frontmatter(path, fm):
+    issues = []
+    if fm.get("type") and fm["type"] != path.stem:
+        issues.append(f"frontmatter 'type: {fm['type']}' does not match the file name {path.name}")
+    for key in ("created", "updated"):
+        v = fm.get(key, "")
+        if v and v != DATE_PLACEHOLDER and not DATE_RE.match(v):
+            issues.append(f"frontmatter '{key}' is not a YYYY-MM-DD date (found {v!r})")
+    if DATE_RE.match(fm.get("created", "")) and DATE_RE.match(fm.get("updated", "")) and fm["updated"] < fm["created"]:
+        issues.append(f"frontmatter 'updated' ({fm['updated']}) is earlier than 'created' ({fm['created']})")
+    for key in SIBLING_KEYS:
+        v = fm.get(key)
+        if v and not (path.parent / v).is_file():
+            issues.append(f"frontmatter '{key}: {v}' names a file that does not exist")
+    return issues
+
+
 def new_section(title):
     return {"title": title, "lists": 0, "checkboxes": [], "tables": [], "fences": []}
 
@@ -127,9 +210,9 @@ def parse(path: Path):
     frontmatter, start = parse_frontmatter(lines)
 
     sections = [new_section("(before first heading)")]
-    headings = []
+    headings, titled = [], []
     req_ids, code, links = set(), Counter(), []
-    fence = None  # [marker, lang, line_count] while inside a fenced block
+    fence = None  # [marker, lang, content lines] while inside a fenced block
     table = None  # [rows, columns] while inside a table
 
     for line in lines[start:]:
@@ -137,15 +220,15 @@ def parse(path: Path):
 
         if fence:
             if line.strip().startswith(fence[0]):
-                section["fences"].append((fence[1], fence[2]))
+                section["fences"].append(fence_key(fence))
                 fence = None
             else:
-                fence[2] += 1
+                fence[2].append(line)
                 req_ids.update(REQ_ID_RE.findall(line))
             continue
         m = FENCE_RE.match(line)
         if m:
-            fence = [m.group(1), m.group(2) or "", 0]
+            fence = [m.group(1), m.group(2) or "", []]
             continue
 
         if line.lstrip().startswith("|"):
@@ -161,6 +244,7 @@ def parse(path: Path):
         m = HEADING_RE.match(line)
         if m:
             headings.append(len(m.group(1)))
+            titled.append((len(m.group(1)), m.group(2).strip()))
             sections.append(new_section(m.group(2).strip()))
             continue
 
@@ -175,11 +259,12 @@ def parse(path: Path):
         links.extend(LINK_RE.findall(line))
 
     if fence:
-        sections[-1]["fences"].append((fence[1], fence[2]))
+        sections[-1]["fences"].append(fence_key(fence))
 
     return {
         "frontmatter": frontmatter,
         "headings": headings,
+        "titled": titled,
         "sections": sections,
         "req_ids": req_ids,
         "code": code,
@@ -191,7 +276,9 @@ def lint(path: Path):
     """Per-file checks that need no mirror: unique IDs, task order, blockers."""
     issues = []
     lines = path.read_text(encoding="utf-8").splitlines()
-    _, start = parse_frontmatter(lines)
+    frontmatter, start = parse_frontmatter(lines)
+    issues.extend(lint_frontmatter(path, frontmatter))
+    issues.extend(lint_headings(path, frontmatter, parse(path)["titled"]))
     seen = Counter()
     tasks_above = set()
     task = None  # the task whose fields we are reading
@@ -390,9 +477,17 @@ def compare(en: Path, ru: Path):
         if fm.get("mirror") != expected:
             issues.append(f"{name} 'mirror' should be '{expected}' (found {fm.get('mirror')!r})")
 
-    # Headings
+    # Headings: same levels, and template sections paired by position (Summary <-> Кратко)
     if a["headings"] != b["headings"]:
         issues.append(f"heading structure differs: EN {len(a['headings'])} headings {a['headings']} vs RU {len(b['headings'])} {b['headings']}")
+    else:
+        ta, tb = template_headings("en", en.stem), template_headings("ru", ru.stem)
+        if ta and tb and len(ta) == len(tb):
+            pos_a = {(l, t): i for i, (l, t, _) in enumerate(ta)}
+            pos_b = {(l, t): i for i, (l, t, _) in enumerate(tb)}
+            for (la, xa), (lb, xb) in zip(a["titled"], b["titled"]):
+                if la > 1 and pos_a.get((la, xa), -1) != pos_b.get((lb, xb), -1):
+                    issues.append(f"headings don't pair up: EN '{xa}' vs RU '{xb}' (the RU template's heading for this section is {[t for l, t, _ in tb if (l, t) in pos_b and pos_b[(l, t)] == pos_a.get((la, xa), -1)]})")
 
     # Per-section content (only meaningful when sections line up)
     for i, (sa, sb) in enumerate(zip(a["sections"], b["sections"])):
@@ -406,7 +501,7 @@ def compare(en: Path, ru: Path):
         if ta != tb:
             issues.append(f"{where}: tables (rows, columns) {ta} vs {tb}")
         if sa["fences"] != sb["fences"]:
-            issues.append(f"{where}: fenced blocks (lang, lines) {sa['fences']} vs {sb['fences']}")
+            issues.append(f"{where}: fenced blocks (lang, lines, content) {sa['fences']} vs {sb['fences']} — non-Mermaid blocks are byte-identical in both languages")
 
     # Whole-document invariants
     if a["req_ids"] != b["req_ids"]:
