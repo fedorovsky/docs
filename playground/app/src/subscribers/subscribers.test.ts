@@ -48,12 +48,13 @@ test('with consentRequired = false: IDs, temporaryId and deviceId, no statuses',
   }
 });
 
-test('request headers: strings, consentRequired included, null header dropped, no deviceId when required', () => {
+test('request headers: strings, consentRequired and deviceId always included, null header dropped', () => {
   const sub = createRequestHeadersSubscriber();
   sub.handle(required);
   expect(sub.getSnapshot()?.state).toEqual({
     'X-Marketing-Tracking-Id': 'm-1',
     'X-Temporary-Id': 'tmp-1',
+    'X-Device-Id': 'device-0001',
     'X-Marketing-Consent-Status': '1',
     'X-Analytics-Consent-Status': '0',
     'X-Consent-Required': 'true',

@@ -79,6 +79,12 @@ Delivers the identity flow of the [Spec](./spec.md): scaffold, fake API, observe
   - Change: the start panel with the `consentRequired` switch and "Start"; `App` creates the fake bridge and service per "Start" (Spec *Components & changes*)
   - Done when: `App` tests show only the panel before "Start", both modes, a restart in the other mode and a failed start with "Retry"; in the browser the mode switches without a reload
   - Depends on: T12
+- [x] **T14. Always send `deviceId` in the request headers**
+  - Covers: R9
+  - Files: `src/subscribers/requestHeaders.ts`, `src/subscribers/subscribers.test.ts`
+  - Change: the headers projection adds `X-Device-Id` in both `consentRequired` modes (Spec *Subscriber fields*)
+  - Done when: tests show `X-Device-Id` with `consentRequired = true` and the other two projections still without `deviceId`
+  - Depends on: T5
 - [ ] **T10. Apply the final design and copy**
   - Covers: R3, R4, R10
   - Files: `src/ui/ConsentBlock.tsx`, `src/ui/MonitoringBlock.tsx`, `src/App.tsx`
@@ -105,3 +111,9 @@ Delivers the identity flow of the [Spec](./spec.md): scaffold, fake API, observe
   - Change: the start panel with the `consentRequired` switch and "Start"; `App` creates the fake bridge and service per "Start" (Spec *Components & changes*)
   - Done when: `App` tests show only the panel before "Start", both modes, a restart in the other mode and a failed start with "Retry"; in the browser the mode switches without a reload
   - Depends on: T12
+- [x] **T14. Always send `deviceId` in the request headers**
+  - Covers: R9
+  - Files: `src/subscribers/requestHeaders.ts`, `src/subscribers/subscribers.test.ts`
+  - Change: the headers projection adds `X-Device-Id` in both `consentRequired` modes (Spec *Subscriber fields*)
+  - Done when: tests show `X-Device-Id` with `consentRequired = true` and the other two projections still without `deviceId`
+  - Depends on: T5

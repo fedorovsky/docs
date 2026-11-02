@@ -71,14 +71,14 @@ sequenceDiagram
 
 #### Subscriber fields
 
-| Field | All three subscribers | Request headers only |
-|-------|-----------------------|----------------------|
-| `marketingTrackingId`, `analyticsTrackingId`, `temporaryId` | always | |
-| `deviceId` | only when `consentRequired = false` | |
-| `marketingConsentStatus`, `analyticsConsentStatus` | only when `consentRequired = true` | |
-| `consentRequired` | | always |
+| Field | Analytics collector, game config | Request headers |
+|-------|----------------------------------|-----------------|
+| `marketingTrackingId`, `analyticsTrackingId`, `temporaryId` | always | always |
+| `deviceId` | only when `consentRequired = false` | always |
+| `marketingConsentStatus`, `analyticsConsentStatus` | only when `consentRequired = true` | only when `consentRequired = true` |
+| `consentRequired` | never | always |
 
-The observer still delivers all seven fields; the projection drops `deviceId` when `consentRequired = true`, so it never reaches a recorder's state. Request headers are strings (statuses as `"0"` / `"1"` / `"2"`, `consentRequired` as `"true"` / `"false"`), and a header whose value would be `null` is omitted. The analytics collector and the game config keep `null` values.
+The observer still delivers all seven fields; the analytics and game-config projections drop `deviceId` when `consentRequired = true`, so it never reaches their state; the headers projection always carries it (PRD R9). Request headers are strings (statuses as `"0"` / `"1"` / `"2"`, `consentRequired` as `"true"` / `"false"`), and a header whose value would be `null` is omitted. The analytics collector and the game config keep `null` values.
 
 Header names (Spec Q3): `X-Marketing-Tracking-Id`, `X-Analytics-Tracking-Id`, `X-Temporary-Id`, `X-Device-Id`, `X-Marketing-Consent-Status`, `X-Analytics-Consent-Status`, `X-Consent-Required`.
 
@@ -165,7 +165,7 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 | Fake persistence | In memory only; `localStorage` | `localStorage` | The ticket requires the choice to survive a reload |
 | Switching `consentRequired` in the fake | Build-time constant; URL query `?consentRequired=false`; a switch on a debug start panel | Start panel switch, on by default | Testers switch modes and restart without a reload; the value still comes only from the config object |
 | Fake delay and error rate | Fixed values; options with defaults 300–1000 ms and 10% | Options with defaults; errors only in `updateConsent` | Tests run with zero delay and no errors; manual testing sees delays and failed saves, and a start that never fails (PRD R11) |
-| Dropping `deviceId` | In the observer; in each subscriber's projection | Projection | The ticket says the observer delivers all seven fields; the rule is about what subscribers write |
+| Dropping `deviceId` | In the observer; in each subscriber's projection | Projection | The ticket says the observer delivers all seven fields; the rule is about what subscribers write, and it differs per subscriber (headers always carry it) |
 | Header names | The ticket leaves them to the engineer | The `X-…` names in *Subscriber fields* | Conventional; confirmed with the backend before the real integration (Spec Q3) |
 
 ## Edge cases & error handling
@@ -186,11 +186,11 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 
 ## Non-functional
 
-- Privacy: with `consentRequired = true`, `deviceId` never appears in a recorder's state or in the monitoring blocks (R9). Nothing leaves the browser: no request is sent.
+- Privacy: with `consentRequired = true`, `deviceId` never appears in the analytics collector or game-config state or blocks; only the request headers carry it (R9). Nothing leaves the browser: no request is sent.
 
 ## Testing plan
 
-- Unit (Vitest): `identityObserver` (first set calls, a changed field calls, an identical set doesn't, a late subscriber is called); `fakeIdentityBridge` (first start, `consentRequired = false`, the ID rules of R6, atomic failure, persistence through a fake storage); `identityService` (start and save paths, a failure leaves the observer untouched); the three projections (both `consentRequired` modes, a `null` header dropped, `null` kept elsewhere).
+- Unit (Vitest): `identityObserver` (first set calls, a changed field calls, an identical set doesn't, a late subscriber is called); `fakeIdentityBridge` (first start, `consentRequired = false`, the ID rules of R6, atomic failure, persistence through a fake storage); `identityService` (start and save paths, a failure leaves the observer untouched); the three projections (both `consentRequired` modes, `deviceId` always in the headers and only without `consentRequired` elsewhere, a `null` header dropped, `null` kept elsewhere).
 - Component (Vitest + Testing Library): `ConsentBlock` (visibility per variant, an off toggle saves `Declined`, "Accept all", disabled while pending, error text with toggles kept; R3–R5, R7); `MonitoringBlock` (state and time update) and `ConfigBlock` (all seven fields, re-rendered on change; R10).
 - Component (Vitest + Testing Library): `App` (nothing but the start panel before "Start", start in both modes, restart in the other mode, failed start with "Retry"; R12).
 - Manual, in the browser, in both modes: the PRD acceptance criteria of R1–R11, including a failed save, a revoke-and-accept cycle and a reload.

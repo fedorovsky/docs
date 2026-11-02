@@ -17,6 +17,7 @@ export const HEADER_NAMES = {
 export function projectRequestHeaders(fields: IdentityFields): RequestHeaders {
   const values: Partial<Record<keyof typeof HEADER_NAMES, string | number | boolean | null>> = {
     ...pickCommonFields(fields),
+    deviceId: fields.deviceId, // headers always carry it (PRD R9)
     consentRequired: fields.consentRequired,
   };
   const headers: RequestHeaders = {};
