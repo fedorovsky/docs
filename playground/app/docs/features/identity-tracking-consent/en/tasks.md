@@ -47,7 +47,7 @@ Delivers the identity flow of the [Spec](./spec.md): scaffold, fake bridge, obse
   - Covers: R9
   - Files: `src/subscribers/recorder.ts`, `src/subscribers/requestHeaders.ts`, `src/subscribers/analyticsCollector.ts`, `src/subscribers/gameConfig.ts`, `src/subscribers/subscribers.test.ts`
   - Change: `createRecorder` and the three projections of Spec *Subscriber fields*
-  - Done when: tests show the field sets for both `consentRequired` modes, no `deviceId` when `true`, `null` headers dropped, `null` kept by the other two, and `updatedAt` set on each call
+  - Done when: tests show the field sets for both `consentRequired` modes, no `deviceId` when `true` (for the headers replaced by T14), `null` headers dropped, `null` kept by the other two, and `updatedAt` set on each call
   - Depends on: T2
 - [x] **T6. Build the consent block**
   - Covers: R3, R4, R5, R7

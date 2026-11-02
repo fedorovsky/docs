@@ -67,7 +67,7 @@ sequenceDiagram
 - `src/subscribers/requestHeaders.ts`, `src/subscribers/analyticsCollector.ts`, `src/subscribers/gameConfig.ts` — новые: три проекции из раздела «Поля подписчиков».
 - `src/ui/ConsentBlock.tsx` — новый: один компонент для обоих блоков (`variant: 'initial' | 'settings'`); два переключателя, "Save", "Accept all", состояния ожидания и ошибки.
 - `src/ui/MonitoringBlock.tsx` — новый: состояние рекордера в виде форматированного JSON плюс время обновления.
-- `src/ui/StartPanel.tsx` — новый: отладочная панель старта наверху страницы: переключатель `consentRequired` (по умолчанию включён), переключатель "first start" (по умолчанию выключен) и кнопка "Start", отключённая, пока старт выполняется.
+- `src/ui/StartPanel.tsx` — новый: отладочная панель старта наверху страницы: переключатель `consentRequired` (по умолчанию включён), переключатель "first start" (по умолчанию выключен) и кнопка "Start"; кнопка и оба переключателя отключены, пока старт выполняется.
 - `src/ui/ConfigBlock.tsx` — новый: текущие семь полей обсервера в виде форматированного JSON, наверху страницы.
 - `src/App.tsx` — страница: панель старта; по "Start" создаёт бридж через `createBridge(consentRequired, firstStart)` и новый `identityService`, вызывает `start()` и держит его состояния ожидания и ошибки; как только у обсервера есть поля, показывает блок конфига, два блока согласия по правилам видимости и три блока мониторинга.
 - `src/main.tsx` — сборка: создаёт обсервер и три рекордера, подписывает рекордеры и рендерит `App` с `createBridge = (consentRequired, firstStart) => createFakeIdentityBridge({ consentRequired, forgetChoice: firstStart })`.
@@ -100,7 +100,6 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
   [*] --> NotDecided: consentRequired = true, first start
-  [*] --> NotDecided: consentRequired = false
   NotDecided --> Accepted: сохранён включённым, новый ID
   NotDecided --> Declined: сохранён выключенным, ID сброшен
   Accepted --> Accepted: сохранён включённым, тот же ID
@@ -108,6 +107,8 @@ stateDiagram-v2
   Declined --> Accepted: сохранён включённым, новый ID
   Declined --> Declined: сохранён выключенным, ID сброшен
 ```
+
+При `consentRequired = false` блоков согласия нет: оба статуса остаются `NotDecided` и не меняются (PRD R2).
 
 Хранилище фейка: ключ `localStorage` `track12.identity` содержит `{ marketingConsentStatus, analyticsConsentStatus, marketingTrackingId, analyticsTrackingId }`. `deviceId` — константа `"device-0001"`; `temporaryId` — `crypto.randomUUID()` при каждом `getConfig`; tracking ID — `crypto.randomUUID()` при выдаче.
 
@@ -189,7 +190,7 @@ interface ConsentResponse { marketingTrackingId: string | null; analyticsTrackin
 - `consentRequired = false` при сохранённом с прошлого запуска выборе → статусы `NotDecided`, ID `null`; сохранённый выбор не трогается и возвращается при следующем старте с `consentRequired = true`.
 - `localStorage` недоступен или испорчен → фейк ведёт себя так, будто ничего не сохранено, и держит выбор в памяти на время сессии.
 - Подписчик добавлен после завершения `start()` → сразу вызывается с текущими полями.
-- `start()` вызван, пока старт ещё выполняется (React StrictMode в разработке монтирует дважды) → второй вызов делит запрос с первым; один `getConfig`, один `temporaryId`, один вызов подписчиков.
+- `start()` вызван, пока старт ещё выполняется (страница так не может: "Start" отключена на время старта; сервис на это не полагается) → второй вызов делит запрос с первым; один `getConfig`, один `temporaryId`, один вызов подписчиков.
 
 ## Нефункциональные требования
 

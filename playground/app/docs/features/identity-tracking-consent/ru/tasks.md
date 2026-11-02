@@ -47,7 +47,7 @@ links: [TRACK-12]
   - Покрывает: R9
   - Файлы: `src/subscribers/recorder.ts`, `src/subscribers/requestHeaders.ts`, `src/subscribers/analyticsCollector.ts`, `src/subscribers/gameConfig.ts`, `src/subscribers/subscribers.test.ts`
   - Что сделать: `createRecorder` и три проекции из раздела «Поля подписчиков»
-  - Готово, когда: тесты показывают наборы полей для обоих режимов `consentRequired`, отсутствие `deviceId` при `true`, отброшенные хедеры с `null`, сохранённый `null` у двух других и `updatedAt`, выставленный при каждом вызове
+  - Готово, когда: тесты показывают наборы полей для обоих режимов `consentRequired`, отсутствие `deviceId` при `true` (для хедеров заменено T14), отброшенные хедеры с `null`, сохранённый `null` у двух других и `updatedAt`, выставленный при каждом вызове
   - Зависит от: T2
 - [x] **T6. Собрать блок согласия**
   - Покрывает: R3, R4, R5, R7

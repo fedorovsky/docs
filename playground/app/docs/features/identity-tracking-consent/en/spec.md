@@ -67,7 +67,7 @@ sequenceDiagram
 - `src/subscribers/requestHeaders.ts`, `src/subscribers/analyticsCollector.ts`, `src/subscribers/gameConfig.ts` — new: the three projections of *Subscriber fields*.
 - `src/ui/ConsentBlock.tsx` — new: one component for both blocks (`variant: 'initial' | 'settings'`); two toggles, "Save", "Accept all", pending and error state.
 - `src/ui/MonitoringBlock.tsx` — new: a recorder's state as formatted JSON plus the update time.
-- `src/ui/StartPanel.tsx` — new: the debug start panel at the top of the page: a `consentRequired` switch (on by default), a "first start" switch (off by default) and a "Start" button, disabled while a start is pending.
+- `src/ui/StartPanel.tsx` — new: the debug start panel at the top of the page: a `consentRequired` switch (on by default), a "first start" switch (off by default) and a "Start" button; the button and both switches are disabled while a start is pending.
 - `src/ui/ConfigBlock.tsx` — new: the observer's current seven fields as formatted JSON, at the top of the page.
 - `src/App.tsx` — the page: the start panel; on "Start" creates the bridge through `createBridge(consentRequired, firstStart)` and a new `identityService`, calls `start()` and keeps its pending and error state; once the observer has fields, the config block, the two consent blocks by their visibility rules and the three monitoring blocks.
 - `src/main.tsx` — wiring: creates the observer and the three recorders, subscribes the recorders and renders `App` with `createBridge = (consentRequired, firstStart) => createFakeIdentityBridge({ consentRequired, forgetChoice: firstStart })`.
@@ -100,7 +100,6 @@ Status lifecycle of one consent; the other is independent:
 ```mermaid
 stateDiagram-v2
   [*] --> NotDecided: consentRequired = true, first start
-  [*] --> NotDecided: consentRequired = false
   NotDecided --> Accepted: toggle on saved, new ID
   NotDecided --> Declined: toggle off saved, ID cleared
   Accepted --> Accepted: toggle on saved, same ID
@@ -108,6 +107,8 @@ stateDiagram-v2
   Declined --> Accepted: toggle on saved, new ID
   Declined --> Declined: toggle off saved, ID cleared
 ```
+
+With `consentRequired = false` there are no consent blocks: both statuses stay `NotDecided` and never change (PRD R2).
 
 Fake storage: the `localStorage` key `track12.identity` holds `{ marketingConsentStatus, analyticsConsentStatus, marketingTrackingId, analyticsTrackingId }`. `deviceId` is the constant `"device-0001"`; `temporaryId` is `crypto.randomUUID()` on every `getConfig`; tracking IDs are `crypto.randomUUID()` when issued.
 
@@ -189,7 +190,7 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 - `consentRequired = false` with a stored choice from an earlier run → statuses `NotDecided`, IDs `null`; the stored choice is untouched and returns on the next start with `consentRequired = true`.
 - `localStorage` unavailable or corrupt → the fake behaves as if nothing was stored and keeps the choice in memory for the session.
 - A subscriber added after `start()` finished → called at once with the current fields.
-- `start()` called while a start is in flight (React StrictMode mounts twice in development) → the second call shares the first request; one `getConfig`, one `temporaryId`, one subscriber call.
+- `start()` called while a start is in flight (the page can't do it: "Start" is disabled while pending; the service doesn't rely on that) → the second call shares the first request; one `getConfig`, one `temporaryId`, one subscriber call.
 
 ## Non-functional
 
