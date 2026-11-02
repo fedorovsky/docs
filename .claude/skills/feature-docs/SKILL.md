@@ -1,6 +1,6 @@
 ---
 name: feature-docs
-description: Writes, updates and reviews feature documentation as three mirrored English/Russian documents per feature — a PRD (why and what), a technical Spec (how) and a task list (order of work) — and implements a feature task by task from that list. Use whenever the user wants to describe, plan, document or design a feature; asks for a PRD, requirements, spec, tech spec, design doc, RFC or implementation plan; wants to turn a ticket, notes or a conversation into feature docs; wants to break a spec into tasks or implement from it; or asks to review or update existing PRD/spec/tasks files — even without the words "PRD" or "spec" (e.g. "let's write down what this feature should do", "опиши фичу", "напиши ПРД", "сделай спеку", "разбей на задачи", "делай по задачам").
+description: Writes, updates and reviews feature documentation as three mirrored English/Russian documents per feature — a PRD (why and what), a technical Spec (how) and a task list (order of work) — and implements a feature task by task from that list. Use whenever the user wants to describe, plan, document or design a feature; asks for a PRD, requirements, spec, tech spec, design doc, RFC or implementation plan; wants to turn a ticket, notes or a conversation into feature docs; wants to break a spec into tasks or implement from it; or asks to review, audit, check or update existing PRD/spec/tasks files or a docs folder, or to do the next task from such a list — even without the words "PRD" or "spec" (e.g. "let's write down what this feature should do", "audit the docs", "опиши фичу", "напиши ПРД", "сделай спеку", "разбей на задачи", "делай по задачам", "проведи аудит доков", "проверь доки", "обнови спеку", "следующая задача").
 ---
 
 # Feature docs
@@ -27,7 +27,7 @@ Bundled files, relative to this skill's directory:
 
 - `assets/templates/{en,ru}/{prd,spec,tasks}.md`: the document structure.
 - `references/examples/orders-csv-export/`: a worked example. Read it once for depth and tone.
-- `scripts/check_mirror.py`: structural EN/RU comparison plus per-file checks: every ID defined once, tasks in execution order, every blocker naming a question. Run it (Python 3, no packages); don't read it.
+- `scripts/check_mirror.py`: structural EN/RU comparison plus checks on each file (every ID defined once, tasks in execution order, blockers naming a question, *Covers* labels, no template scaffolding) and across a feature's documents (every PRD requirement in the Spec's coverage table and in some task's *Covers*). Run it (Python 3, no packages); don't read it.
 
 ## Workflow
 
@@ -45,7 +45,7 @@ The project is the codebase the feature belongs to; in a monorepo, the package o
 | Tasks | Read the Spec and the PRD, then write `tasks.md` (see *Tasks*). No Spec means write the Spec first. A `draft` Spec means the tasks may change with it: say so. |
 | Implement | See *Working through tasks*. |
 | Update | Run the mirror check first and resolve an out-of-sync pair before editing (see *Bilingual mirror*). Edit both languages in one pass, bump `updated`, keep IDs stable. A Spec change pulls `tasks.md` along (see *Tasks*). |
-| Review | Report against the checklist, mirror problems included. Don't rewrite unless asked. |
+| Review | Report against the checklist, mirror problems included. Read the code and the git log too, not only the documents: the usual findings are a Spec that still describes the state before the feature, tasks that describe a Spec since changed, and requirements with no evidence in the code. Don't rewrite unless asked. |
 
 ### 3. Gather facts; invent nothing
 
@@ -88,7 +88,7 @@ A new item goes where it belongs in the order (a task where it runs, a requireme
 
 ### PRD
 
-- Requirements table: ID, requirement, priority (MoSCoW: **Must** / **Should** / **Could**), at least one acceptance criterion a tester can check. Criteria may name routes, permissions and analytics events; those are product facts, not implementation details. Stubs, mocks, test names and module names are implementation details: when a criterion can only be verified in automated tests, it says so and stops there.
+- Requirements table: ID, requirement, priority (MoSCoW: **Must** / **Should** / **Could**), at least one acceptance criterion a tester can check. **Must** is what the feature can't ship without; a debug aid, a convenience, or anything the PRD says will be removed later is **Should** or **Could**. A table that is all **Must** hasn't been prioritised. Criteria may name routes, permissions and analytics events; those are product facts, not implementation details. Stubs, mocks, test names and module names are implementation details: when a criterion can only be verified in automated tests, it says so and stops there.
 - Each success metric names a measurement source (an existing analytics event or dashboard is fine) and a target; an unknown baseline or target points to a question ("unknown — see Q2").
 - Product decisions the Spec needs but the PRD doesn't make belong in the PRD's open questions.
 
@@ -114,7 +114,7 @@ One checkbox per task, fields underneath, in execution order:
 
 Each task is reviewable alone, about one small PR, and leaves the app building and working, with nothing half-built reachable: build the internals first and add the entry point (route, button, menu item) in the last task the flow needs. Missing mockups or final UI text don't block UI tasks: build with provisional text and add one late task for the final design, blocked by the design question.
 
-Tasks add nothing the Spec doesn't describe. A gap is fixed in the Spec first, then the task is added. Any fix to the PRD or Spec while writing tasks, including convention breaks noticed on the way, is an *Update* (both languages, `updated`, mirror check) and is listed in the hand-over message.
+Tasks add nothing the Spec doesn't describe. A gap is fixed in the Spec first, then the task is added. A change asked for during implementation takes the same road as the feature itself: a requirement in the PRD (the next free R), its design in the Spec, then the task. Any fix to the PRD or Spec while writing tasks, including convention breaks noticed on the way, is an *Update* (both languages, `updated`, mirror check) and is listed in the hand-over message.
 
 Tasks follow the Spec after they are done as well. A Spec change is followed by a pass over `tasks.md`: every task, ticked or not, whose *Files*, *Change* or *Done when* cite what changed is brought in line in the same update; a ticked task whose work a later task replaced stays ticked and names it ("replaced by T13"). A task list that describes a Spec that no longer exists is a review finding.
 

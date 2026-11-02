@@ -16,8 +16,14 @@ IDs, inline code, links, fenced blocks and frontmatter — since prose is
 expected to differ by language. Meaning still has to be checked by reading.
 
 Each file is also checked on its own: every R/T/Q ID is defined once, a task's
-"Depends on" names only tasks above it (tasks are in execution order) and a
-"Blocked by" names a question as "PRD Qn" / "Spec Qn".
+"Depends on" names only tasks above it (tasks are in execution order), a
+"Blocked by" names a question as "PRD Qn" / "Spec Qn", "Covers" holds R IDs or
+one of the labels setup / verify / rollout, and no template scaffolding is left
+(<placeholders>, *(optional)* markers, YYYY-MM-DD, frontmatter comments).
+
+A feature folder (one holding en/ or ru/ with prd.md) is checked across its
+documents too: every PRD requirement is in the Spec's coverage table, and every
+requirement that is not struck through is in some task's "Covers".
 """
 
 import os
@@ -46,6 +52,13 @@ TASK_DEF_RE = re.compile(r"^\s*[-*+]\s+\[[ xX]\]\s+~{0,2}\*\*(T\d+)\.")
 DEPENDS_RE = re.compile(r"^\s*[-*+]\s+(?:Depends on|Зависит от):\s*(.*)$")
 BLOCKED_RE = re.compile(r"^\s*[-*+]\s+(?:Blocked by|Заблокировано):\s*(.*)$")
 QUESTION_REF_RE = re.compile(r"\b(?:PRD|Spec) Q\d+\b")
+COVERS_RE = re.compile(r"^\s*[-*+]\s+(?:Covers|Покрывает):\s*(.*)$")
+COVERS_LABELS = {"setup", "verify", "rollout"}
+REQ_ROW_RE = re.compile(r"^\s*\|\s*(R\d+)\s*\|(.*)$")
+# Template scaffolding that must not survive into a real document.
+PLACEHOLDER_RE = re.compile(r"<[A-Za-zА-Яа-яЁё][^<>`\n]{0,80}>")
+OPTIONAL_MARK_RE = re.compile(r"\*\((?:optional|необязательно)\)\*")
+DATE_PLACEHOLDER = "YYYY-MM-DD"
 
 
 def lang_of(path: Path):
@@ -187,10 +200,106 @@ def lint(path: Path):
         m = BLOCKED_RE.match(line)
         if m and not QUESTION_REF_RE.search(m.group(1)):
             issues.append(f"line {n}: {task} 'Blocked by' must name a question as 'PRD Qn' or 'Spec Qn' (found {m.group(1).strip()!r})")
+        m = COVERS_RE.match(line)
+        if m:
+            labels = [c[1].strip() for c in CODE_RE.findall(m.group(1))]
+            bad = [l for l in labels if l not in COVERS_LABELS]
+            if bad:
+                issues.append(f"line {n}: {task} 'Covers' label must be setup, verify or rollout (found {bad})")
+            rest = CODE_RE.sub("", m.group(1))
+            if not labels and not re.search(r"\bR\d+\b", rest):
+                issues.append(f"line {n}: {task} 'Covers' names neither requirement IDs nor a label")
     for id_, count in sorted(seen.items()):
         if count > 1:
             issues.append(f"ID {id_} is defined {count} times")
+    issues.extend(lint_scaffolding(lines, start))
     return issues
+
+
+def lint_scaffolding(lines, start):
+    """Template leftovers: <placeholders>, *(optional)* markers, YYYY-MM-DD, frontmatter comments."""
+    issues = []
+    for n, line in enumerate(lines[:start], start=1):
+        if re.search(r"\s#", line) and line.strip() != "---":
+            issues.append(f"line {n}: frontmatter comment left from the template")
+    in_fence = False
+    for n, line in enumerate(lines[start:], start=start + 1):
+        if FENCE_RE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        prose = CODE_RE.sub("", line)
+        for m in PLACEHOLDER_RE.finditer(prose):
+            issues.append(f"line {n}: placeholder {m.group(0)!r} left from the template")
+        if OPTIONAL_MARK_RE.search(prose):
+            issues.append(f"line {n}: '(optional)' marker left from the template")
+        if DATE_PLACEHOLDER in line:
+            issues.append(f"line {n}: '{DATE_PLACEHOLDER}' left from the template")
+    for n, line in enumerate(lines[:start], start=1):
+        if DATE_PLACEHOLDER in line:
+            issues.append(f"line {n}: '{DATE_PLACEHOLDER}' left from the template")
+    return issues
+
+
+def requirement_rows(path: Path):
+    """R IDs from a document's tables: {id: struck_through}."""
+    rows = {}
+    in_fence = False
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if FENCE_RE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        m = REQ_ROW_RE.match(line)
+        if m:
+            rows[m.group(1)] = "~~" in m.group(2)
+    return rows
+
+
+def covered_in_tasks(path: Path):
+    ids = set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        m = COVERS_RE.match(line)
+        if m:
+            ids.update(re.findall(r"\bR\d+\b", CODE_RE.sub("", m.group(1))))
+    return ids
+
+
+def check_feature(folder: Path):
+    """Cross-document checks for one language folder of a feature."""
+    issues = []
+    prd, spec, tasks = folder / "prd.md", folder / "spec.md", folder / "tasks.md"
+    if not prd.exists():
+        return issues
+    reqs = requirement_rows(prd)
+    if spec.exists():
+        covered = set(requirement_rows(spec))
+        for r in sorted(set(reqs) - covered, key=lambda s: int(s[1:])):
+            issues.append(f"{spec.name}: {r} from the PRD is missing in Requirements coverage")
+        for r in sorted(covered - set(reqs), key=lambda s: int(s[1:])):
+            issues.append(f"{spec.name}: {r} in Requirements coverage is not in the PRD")
+    if tasks.exists():
+        covered = covered_in_tasks(tasks)
+        live = {r for r, struck in reqs.items() if not struck}
+        for r in sorted(live - covered, key=lambda s: int(s[1:])):
+            issues.append(f"{tasks.name}: {r} is in no task's Covers")
+        for r in sorted(covered - set(reqs), key=lambda s: int(s[1:])):
+            issues.append(f"{tasks.name}: Covers names {r}, which is not in the PRD")
+    return issues
+
+
+def collect_features(paths):
+    folders = set()
+    for raw in paths:
+        p = Path(raw)
+        candidates = [p] if p.is_file() else list(p.rglob("prd.md")) if p.is_dir() else []
+        for f in candidates:
+            lang, index = lang_of(f)
+            if lang is not None:
+                folders.add(Path(*f.parts[: index + 1]))
+    return sorted(folders)
 
 
 def compare(en: Path, ru: Path):
@@ -289,6 +398,15 @@ def main(argv):
                 print(f"  - {issue}")
         else:
             print(f"OK   {en} <-> {ru}")
+    for folder in collect_features(argv):
+        issues = check_feature(folder)
+        if issues:
+            failed = True
+            print(f"FAIL {folder} (across documents)")
+            for issue in issues:
+                print(f"  - {issue}")
+        else:
+            print(f"OK   {folder} (across documents)")
     return 1 if failed else 0
 
 
