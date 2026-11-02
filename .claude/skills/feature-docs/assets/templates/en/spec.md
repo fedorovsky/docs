@@ -10,7 +10,7 @@ reviewers: []
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 prd: ./prd.md
-links: []                # tickets, PRs, designs, related docs
+links: []                # "Role: name — URL", e.g. "Jira: TRACK-12 — https://…", "Confluence: tracking policy — https://…", "PR: consent banner — https://…"
 ---
 
 # <Feature name> — Spec

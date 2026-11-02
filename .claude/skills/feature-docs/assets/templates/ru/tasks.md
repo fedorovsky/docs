@@ -10,7 +10,7 @@ created: YYYY-MM-DD
 updated: YYYY-MM-DD
 prd: ./prd.md
 spec: ./spec.md
-links: []                # tickets, PRs, designs, related docs
+links: []                # "Role: name — URL", e.g. "Jira: TRACK-12 — https://…", "PR: consent banner — https://…"
 ---
 
 # <Название фичи> — Задачи

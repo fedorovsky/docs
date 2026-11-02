@@ -10,7 +10,7 @@ reviewers: []
 created: 2026-11-02
 updated: 2026-11-02
 prd: ./prd.md
-links: [TRACK-12]
+links: ["Jira: TRACK-12"]
 ---
 
 # Identity пользователя и согласие на трекинг — Спецификация

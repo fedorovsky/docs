@@ -94,7 +94,13 @@ def parse_frontmatter(lines):
         m = re.match(r"^([\w-]+):\s*(.*)$", line)
         if m:
             value = re.sub(r"\s+#.*$", "", m.group(2)).strip()
-            data[m.group(1)] = value
+            key = m.group(1)
+            data[key] = value
+            continue
+        m = re.match(r"^\s+-\s+(.*)$", line)  # item of a multi-line list
+        if m and data:
+            item = re.sub(r"\s+#.*$", "", m.group(1)).strip()
+            data[key] = (data[key] + "\n" if data[key] else "") + item
     return data, len(lines)
 
 

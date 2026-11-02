@@ -10,7 +10,7 @@ created: 2026-03-13
 updated: 2026-03-13
 prd: ./prd.md
 spec: ./spec.md
-links: [SHOP-412]
+links: ["Jira: SHOP-412"]
 ---
 
 # Экспорт заказов в CSV — Задачи

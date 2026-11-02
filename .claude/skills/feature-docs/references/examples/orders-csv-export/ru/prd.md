@@ -10,7 +10,7 @@ reviewers: [Alex Kim, Sam Lee]
 created: 2026-03-02
 updated: 2026-03-12
 spec: ./spec.md
-links: [SHOP-412]
+links: ["Jira: SHOP-412"]
 ---
 
 # Экспорт заказов в CSV — PRD

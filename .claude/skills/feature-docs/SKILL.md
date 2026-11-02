@@ -70,6 +70,7 @@ Never substitute a plausible value for a missing metric, baseline, date or owner
 - Size to the feature: a small feature's PRD fits one screen. Tables and short bullets over prose.
 - English first, in English whatever language the sources are in; then the Russian mirror from the Russian template. Never draft the two independently.
 - Links: `prd:` / `spec:` point to siblings in the same language folder (`./prd.md`); `mirror:` points to the twin (`../ru/prd.md` from `en/`).
+- Sources: every external source (Jira, Figma, Confluence, a PR, research) is an entry in `links:` of the form `"Role: name — URL"` (`"Jira: TRACK-12"` alone when the key resolves in the team's tracker), in English in both versions, in the document it informs: tickets, designs and research in the PRD, PRs and technical pages in the Spec, the ticket and PRs in Tasks. A fact cites its source in the sentence that uses it (*Problem*, the metrics table, *Context & current state*, *Alternatives & decisions*). No bare URL anywhere, and no separate list of sources in the body.
 
 ### 5. Check and hand over
 
@@ -195,6 +196,7 @@ Add one when prose can't explain it quickly: three or more parties, or non-trivi
 
 **All**
 - [ ] Frontmatter complete (`TBD` for unknowns); sibling and mirror links correct.
+- [ ] Every external source is a `"Role: name — URL"` entry in `links:` of the document it informs, and each fact taken from it is cited where it is used; no bare URLs.
 - [ ] Open questions numbered and referenced as "PRD Qn"; everything unresolved listed, with an owner where known.
 - [ ] Blocking questions were asked before drafting, or the hand-over says why they were skipped and lists the assumptions made instead.
 - [ ] No scaffolding left.

@@ -10,7 +10,7 @@ reviewers: []
 created: 2026-11-02
 updated: 2026-11-02
 spec: ./spec.md
-links: [TRACK-12]
+links: ["Jira: TRACK-12"]
 ---
 
 # User identity and tracking consent — PRD
