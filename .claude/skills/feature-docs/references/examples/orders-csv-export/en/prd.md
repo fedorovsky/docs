@@ -8,7 +8,7 @@ status: approved
 owner: Jane Doe
 reviewers: [Alex Kim, Sam Lee]
 created: 2026-03-02
-updated: 2026-03-09
+updated: 2026-03-12
 spec: ./spec.md
 links: [SHOP-412]
 ---
@@ -59,3 +59,5 @@ Merchants reconcile orders in spreadsheets or accounting software. Today the onl
 ## Open questions
 
 - [ ] **Q1.** What adoption target is realistic for monthly export usage? — Jane Doe
+- [ ] **Q2.** How many exports may a merchant run at the same time? — Jane Doe
+- [ ] **Q3.** In a store with several staff accounts, who receives the "export ready" email: the owner only, or the person who started it? — Jane Doe

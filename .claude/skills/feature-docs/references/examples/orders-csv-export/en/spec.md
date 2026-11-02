@@ -63,7 +63,7 @@ New table `order_exports`: `id`, `merchant_id`, `filters` (jsonb), `status` (`pe
 | R1 | Export button + async job producing CSV | Components & changes |
 | R2 | Job reuses `OrdersFilter`, the same code the list uses | Components & changes |
 | R3 | Cursor streaming in batches of 1k, async so no gateway timeout | Overview |
-| R4 | Email with link when job runs > 10s | Overview |
+| R4 | **Partial:** email with link when job runs > 10s, sent to the store owner's address only; staff who started the export get nothing (PRD Q3) | Overview |
 | R5 | Dropped in PRD | — |
 
 ## Alternatives & decisions
@@ -77,7 +77,7 @@ New table `order_exports`: `id`, `merchant_id`, `filters` (jsonb), `status` (`pe
 
 - Zero matching orders → CSV with header row only; UI shows "No orders match your filters".
 - Job fails → status `failed`, UI shows retry button; error logged with `exportId`.
-- Merchant starts a second export while one is running → allowed; max 3 concurrent per merchant, otherwise `429`.
+- Merchant starts a second export while one is running → allowed. Assumption (PRD Q2): at most 3 concurrent per merchant, the smallest limit that still lets a merchant export several filtered views; otherwise `429`.
 
 ## Testing plan
 

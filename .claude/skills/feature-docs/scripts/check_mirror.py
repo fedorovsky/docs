@@ -22,8 +22,10 @@ one of the labels setup / verify / rollout, and no template scaffolding is left
 (<placeholders>, *(optional)* markers, YYYY-MM-DD, frontmatter comments).
 
 A feature folder (one holding en/ or ru/ with prd.md) is checked across its
-documents too: every PRD requirement is in the Spec's coverage table, and every
-requirement that is not struck through is in some task's "Covers".
+documents too: every PRD requirement is in the Spec's coverage table, every
+requirement that is neither struck through nor "Not covered:" in the Spec is in
+some task's "Covers", and every "PRD Qn" / "Spec Qn" reference names a question
+that document defines.
 """
 
 import os
@@ -51,12 +53,13 @@ DEF_ID_RE = re.compile(r"^\s*(?:[-*+]\s+(?:\[[ xX]\]\s+)?)?~{0,2}\*\*([RTQ]\d+)\
 TASK_DEF_RE = re.compile(r"^\s*[-*+]\s+\[[ xX]\]\s+~{0,2}\*\*(T\d+)\.")
 DEPENDS_RE = re.compile(r"^\s*[-*+]\s+(?:Depends on|Зависит от):\s*(.*)$")
 BLOCKED_RE = re.compile(r"^\s*[-*+]\s+(?:Blocked by|Заблокировано):\s*(.*)$")
-QUESTION_REF_RE = re.compile(r"\b(?:PRD|Spec) Q\d+\b")
+QUESTION_REF_RE = re.compile(r"\b(PRD|Spec) (Q\d+)\b")
 COVERS_RE = re.compile(r"^\s*[-*+]\s+(?:Covers|Покрывает):\s*(.*)$")
 COVERS_LABELS = {"setup", "verify", "rollout"}
 REQ_ROW_RE = re.compile(r"^\s*\|\s*(R\d+)\s*\|(.*)$")
+NOT_COVERED_RE = re.compile(r"^\s*\*\*(?:Not covered|Не покрыто):\*\*")
 # Template scaffolding that must not survive into a real document.
-PLACEHOLDER_RE = re.compile(r"<[A-Za-zА-Яа-яЁё][^<>`\n]{0,80}>")
+PLACEHOLDER_RE = re.compile(r"<[A-Za-zА-Яа-яЁё][^<>`\n]{0,200}>")
 OPTIONAL_MARK_RE = re.compile(r"\*\((?:optional|необязательно)\)\*")
 DATE_PLACEHOLDER = "YYYY-MM-DD"
 
@@ -242,20 +245,53 @@ def lint_scaffolding(lines, start):
     return issues
 
 
-def requirement_rows(path: Path):
-    """R IDs from a document's tables: {id: struck_through}."""
-    rows = {}
+def body_lines(path: Path):
+    """Lines outside fenced blocks."""
     in_fence = False
     for line in path.read_text(encoding="utf-8").splitlines():
         if FENCE_RE.match(line):
             in_fence = not in_fence
             continue
-        if in_fence:
-            continue
+        if not in_fence:
+            yield line
+
+
+def requirement_rows(path: Path):
+    """R IDs from a document's tables: {id: struck_through}."""
+    rows = {}
+    for line in body_lines(path):
         m = REQ_ROW_RE.match(line)
         if m:
             rows[m.group(1)] = "~~" in m.group(2)
     return rows
+
+
+def not_covered_rows(path: Path):
+    """R IDs whose coverage cell starts with 'Not covered:'."""
+    ids = set()
+    for line in body_lines(path):
+        m = REQ_ROW_RE.match(line)
+        if m and NOT_COVERED_RE.match(m.group(2).split("|")[0].strip()):
+            ids.add(m.group(1))
+    return ids
+
+
+def question_defs(path: Path):
+    """Q IDs the document defines."""
+    ids = set()
+    for line in body_lines(path):
+        m = DEF_ID_RE.match(line)
+        if m and (m.group(1) or m.group(2)).startswith("Q"):
+            ids.add(m.group(1) or m.group(2))
+    return ids
+
+
+def question_refs(path: Path):
+    """{(document, Q ID)} the document refers to as 'PRD Qn' / 'Spec Qn'."""
+    refs = set()
+    for line in body_lines(path):
+        refs.update(QUESTION_REF_RE.findall(line))
+    return refs
 
 
 def covered_in_tasks(path: Path):
@@ -283,10 +319,19 @@ def check_feature(folder: Path):
     if tasks.exists():
         covered = covered_in_tasks(tasks)
         live = {r for r, struck in reqs.items() if not struck}
+        if spec.exists():
+            live -= not_covered_rows(spec)
         for r in sorted(live - covered, key=lambda s: int(s[1:])):
             issues.append(f"{tasks.name}: {r} is in no task's Covers")
         for r in sorted(covered - set(reqs), key=lambda s: int(s[1:])):
             issues.append(f"{tasks.name}: Covers names {r}, which is not in the PRD")
+    defined = {"PRD": question_defs(prd), "Spec": question_defs(spec) if spec.exists() else set()}
+    for doc in (prd, spec, tasks):
+        if not doc.exists():
+            continue
+        for where, q in sorted(question_refs(doc), key=lambda r: (r[0], int(r[1][1:]))):
+            if q not in defined[where]:
+                issues.append(f"{doc.name}: refers to {where} {q}, which {where.lower()}.md does not define")
     return issues
 
 

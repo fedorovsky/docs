@@ -26,8 +26,8 @@ Layout, fixed regardless of project conventions:
 Bundled files, relative to this skill's directory:
 
 - `assets/templates/{en,ru}/{prd,spec,tasks}.md`: the document structure.
-- `references/examples/orders-csv-export/`: a worked example. Read it once for depth and tone.
-- `scripts/check_mirror.py`: structural EN/RU comparison plus checks on each file (every ID defined once, tasks in execution order, blockers naming a question, *Covers* labels, no template scaffolding) and across a feature's documents (every PRD requirement in the Spec's coverage table and in some task's *Covers*). Run it (Python 3, no packages); don't read it.
+- `references/examples/orders-csv-export/`: a worked example. Read the `en/` set once for depth and tone, and `ru/` before writing a mirror.
+- `scripts/check_mirror.py`: structural EN/RU comparison plus checks on each file (every ID defined once, tasks in execution order, blockers naming a question, *Covers* labels, no template scaffolding) and across a feature's documents (every PRD requirement in the Spec's coverage table and, unless **Not covered:**, in some task's *Covers*; every "PRD Qn" / "Spec Qn" defined). Run it (Python 3, no packages); don't read it.
 
 ## Workflow
 
@@ -58,7 +58,7 @@ Sort what is still unknown by the cost of guessing wrong:
 - **Blocking**: a wrong guess means rewriting the document. Who has the problem and the evidence, where the scope ends, a contradiction between sources, whether the feature is wanted at all. Usually one to four per feature.
 - **Fill-in**: metrics, baselines, dates, owners, limits, defaults. A wrong guess changes a value, not the document. Never ask these: record each under *Open questions* with who should answer it, and let the Spec make a conservative assumption where it needs a value (see *Spec*).
 
-Ask the blocking questions once, before drafting, and wait for the answer: one batch through AskUserQuestion, most important first, each with the answer you would assume and why ("Who is the user? Assuming support operators: the ticket refers to their queue"), so that a reply can be one word. End the turn there; the draft starts after the answer. Skip the batch and draft on assumptions only when the user said to just write, handed over a ticket and left, has already said they don't know, or asked not to be asked: then each blocking question goes under *Open questions* too, with the assumption made.
+Ask the blocking questions once, before drafting, and wait for the answer: one AskUserQuestion batch, most important first. Each question is a choice: the answer you would assume comes first, marked recommended, with the reason in its description ("Support operators: the ticket refers to their queue"), then the other readings, so that a reply is one click. Without that tool, ask the same batch in the message. Either way the turn ends there; the draft starts after the answer. Skip the batch and draft on assumptions only when the user said to just write, has already said they don't know, asked not to be asked, or the session runs unattended: then each blocking question goes under *Open questions* too, with the assumption made.
 
 Never substitute a plausible value for a missing metric, baseline, date or owner: a visible gap gets resolved, a fabricated number gets shipped. Keep dates as the source states them ("next quarter") unless the conversion is unambiguous.
 
