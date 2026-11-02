@@ -1,5 +1,5 @@
 import { ConsentStatus, type ConsentRequest, type ConsentResponse } from '../identity/types';
-import type { IdentityApi } from './identityApi';
+import type { IdentityBridge } from './identityBridge';
 
 export const STORAGE_KEY = 'track12.identity';
 export const DEVICE_ID = 'device-0001';
@@ -9,7 +9,7 @@ export interface StorageLike {
   setItem(key: string, value: string): void;
 }
 
-export interface FakeIdentityApiOptions {
+export interface FakeIdentityBridgeOptions {
   consentRequired: boolean;
   /** [min, max] in milliseconds. */
   delayMs?: [number, number];
@@ -53,7 +53,7 @@ function defaultStorage(): StorageLike | null {
   }
 }
 
-export function createFakeIdentityApi(options: FakeIdentityApiOptions): IdentityApi {
+export function createFakeIdentityBridge(options: FakeIdentityBridgeOptions): IdentityBridge {
   const {
     consentRequired,
     delayMs = [300, 1000],
@@ -92,16 +92,16 @@ export function createFakeIdentityApi(options: FakeIdentityApiOptions): Identity
     }
   }
 
-  async function simulateBackend(mayFail: boolean): Promise<void> {
+  async function simulateBridge(mayFail: boolean): Promise<void> {
     const [min, max] = delayMs;
     const wait = min + (max - min) * random();
     if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
-    if (mayFail && random() < errorRate) throw new Error('Fake backend error');
+    if (mayFail && random() < errorRate) throw new Error('Fake bridge error');
   }
 
   return {
     async getConfig() {
-      await simulateBackend(false);
+      await simulateBridge(false);
       let choice = read();
       if (!consentRequired) {
         choice = {
@@ -121,7 +121,7 @@ export function createFakeIdentityApi(options: FakeIdentityApiOptions): Identity
     },
 
     async updateConsent(request: ConsentRequest): Promise<ConsentResponse> {
-      await simulateBackend(true);
+      await simulateBridge(true);
       const stored = read();
       const next = (requested: ConsentStatus, storedStatus: ConsentStatus, storedId: string | null): string | null => {
         if (requested !== ConsentStatus.Accepted) return null;

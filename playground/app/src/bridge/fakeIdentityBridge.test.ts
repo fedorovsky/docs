@@ -1,5 +1,5 @@
 import { ConsentStatus } from '../identity/types';
-import { createFakeIdentityApi, DEVICE_ID, STORAGE_KEY, type StorageLike } from './fakeIdentityApi';
+import { createFakeIdentityBridge, DEVICE_ID, STORAGE_KEY, type StorageLike } from './fakeIdentityBridge';
 
 function memoryStorage(): StorageLike & { data: Map<string, string> } {
   const data = new Map<string, string>();
@@ -10,9 +10,9 @@ function memoryStorage(): StorageLike & { data: Map<string, string> } {
   };
 }
 
-function api(overrides: Partial<Parameters<typeof createFakeIdentityApi>[0]> = {}) {
+function bridge(overrides: Partial<Parameters<typeof createFakeIdentityBridge>[0]> = {}) {
   let n = 0;
-  return createFakeIdentityApi({
+  return createFakeIdentityBridge({
     consentRequired: true,
     delayMs: [0, 0],
     errorRate: 0,
@@ -25,7 +25,7 @@ function api(overrides: Partial<Parameters<typeof createFakeIdentityApi>[0]> = {
 const { Accepted, Declined, NotDecided } = ConsentStatus;
 
 test('first start with consentRequired = true: both NotDecided, IDs null, constant deviceId', async () => {
-  const config = await api().getConfig();
+  const config = await bridge().getConfig();
   expect(config).toMatchObject({
     marketingConsentStatus: NotDecided,
     analyticsConsentStatus: NotDecided,
@@ -37,7 +37,7 @@ test('first start with consentRequired = true: both NotDecided, IDs null, consta
 });
 
 test('temporaryId is new on every getConfig', async () => {
-  const a = api();
+  const a = bridge();
   const first = await a.getConfig();
   const second = await a.getConfig();
   expect(first.temporaryId).not.toBe(second.temporaryId);
@@ -46,7 +46,7 @@ test('temporaryId is new on every getConfig', async () => {
 
 test('consentRequired = false: both Accepted, IDs issued once and kept', async () => {
   const storage = memoryStorage();
-  const a = api({ consentRequired: false, storage });
+  const a = bridge({ consentRequired: false, storage });
   const first = await a.getConfig();
   expect(first).toMatchObject({ marketingConsentStatus: Accepted, analyticsConsentStatus: Accepted, consentRequired: false });
   expect(first.marketingTrackingId).toBeTruthy();
@@ -58,23 +58,23 @@ test('consentRequired = false: both Accepted, IDs issued once and kept', async (
 
 test('consentRequired = false ignores a stored Declined choice', async () => {
   const storage = memoryStorage();
-  const trueMode = api({ storage });
+  const trueMode = bridge({ storage });
   await trueMode.updateConsent({ marketing: Declined, analytics: Accepted });
-  const falseMode = api({ consentRequired: false, storage });
+  const falseMode = bridge({ consentRequired: false, storage });
   const config = await falseMode.getConfig();
   expect(config.marketingConsentStatus).toBe(Accepted);
   expect(config.marketingTrackingId).toBeTruthy();
 });
 
 test('Accepted → Accepted keeps the ID', async () => {
-  const a = api();
+  const a = bridge();
   const first = await a.updateConsent({ marketing: Accepted, analytics: Accepted });
   const second = await a.updateConsent({ marketing: Accepted, analytics: Accepted });
   expect(second).toEqual(first);
 });
 
 test('NotDecided → Accepted and Declined → Accepted issue a new ID; Declined → null', async () => {
-  const a = api();
+  const a = bridge();
   const first = await a.updateConsent({ marketing: Accepted, analytics: Declined });
   expect(first.marketingTrackingId).toBeTruthy();
   expect(first.analyticsTrackingId).toBeNull();
@@ -86,17 +86,17 @@ test('NotDecided → Accepted and Declined → Accepted issue a new ID; Declined
 });
 
 test('fields are independent', async () => {
-  const a = api();
+  const a = bridge();
   const first = await a.updateConsent({ marketing: Accepted, analytics: Accepted });
   const second = await a.updateConsent({ marketing: Accepted, analytics: Declined });
   expect(second.marketingTrackingId).toBe(first.marketingTrackingId);
   expect(second.analyticsTrackingId).toBeNull();
 });
 
-test('the choice survives a new API instance over the same storage', async () => {
+test('the choice survives a new bridge instance over the same storage', async () => {
   const storage = memoryStorage();
-  const saved = await api({ storage }).updateConsent({ marketing: Accepted, analytics: Declined });
-  const config = await api({ storage }).getConfig();
+  const saved = await bridge({ storage }).updateConsent({ marketing: Accepted, analytics: Declined });
+  const config = await bridge({ storage }).getConfig();
   expect(config).toMatchObject({
     marketingConsentStatus: Accepted,
     analyticsConsentStatus: Declined,
@@ -108,8 +108,8 @@ test('the choice survives a new API instance over the same storage', async () =>
 
 test('a failing updateConsent rejects and stores nothing; getConfig never fails', async () => {
   const storage = memoryStorage();
-  const a = api({ storage, errorRate: 1 });
-  await expect(a.updateConsent({ marketing: Accepted, analytics: Accepted })).rejects.toThrow('Fake backend error');
+  const a = bridge({ storage, errorRate: 1 });
+  await expect(a.updateConsent({ marketing: Accepted, analytics: Accepted })).rejects.toThrow('Fake bridge error');
   expect(storage.data.size).toBe(0);
   await expect(a.getConfig()).resolves.toMatchObject({ marketingConsentStatus: NotDecided });
 });
@@ -117,7 +117,7 @@ test('a failing updateConsent rejects and stores nothing; getConfig never fails'
 test('errorRate uses the injected random', async () => {
   const values = [0.5, 0.95, 0.5, 0.05]; // delay, error check, delay, error check
   let i = 0;
-  const a = api({ errorRate: 0.1, random: () => values[i++] });
+  const a = bridge({ errorRate: 0.1, random: () => values[i++] });
   await expect(a.updateConsent({ marketing: Accepted, analytics: Accepted })).resolves.toBeTruthy();
   await expect(a.updateConsent({ marketing: Accepted, analytics: Accepted })).rejects.toThrow();
 });
@@ -129,7 +129,7 @@ test('unreadable storage behaves as nothing stored and keeps the choice in memor
       throw new Error('quota');
     },
   };
-  const a = api({ storage: broken });
+  const a = bridge({ storage: broken });
   const config = await a.getConfig();
   expect(config.marketingConsentStatus).toBe(NotDecided);
   const saved = await a.updateConsent({ marketing: Accepted, analytics: Declined });

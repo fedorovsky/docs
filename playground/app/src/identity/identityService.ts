@@ -1,4 +1,4 @@
-import type { IdentityApi } from '../api/identityApi';
+import type { IdentityBridge } from '../bridge/identityBridge';
 import type { IdentityObserver } from './identityObserver';
 import type { ConsentRequest } from './types';
 
@@ -9,12 +9,12 @@ export interface IdentityService {
   saveConsent(request: ConsentRequest): Promise<void>;
 }
 
-export function createIdentityService(api: IdentityApi, observer: IdentityObserver): IdentityService {
+export function createIdentityService(bridge: IdentityBridge, observer: IdentityObserver): IdentityService {
   let starting: Promise<void> | null = null;
   return {
     start() {
       if (starting === null) {
-        starting = api
+        starting = bridge
           .getConfig()
           .then((fields) => observer.set(fields))
           .finally(() => {
@@ -26,7 +26,7 @@ export function createIdentityService(api: IdentityApi, observer: IdentityObserv
     async saveConsent(request) {
       const current = observer.get();
       if (current === null) throw new Error('Identity is not loaded yet');
-      const response = await api.updateConsent(request);
+      const response = await bridge.updateConsent(request);
       observer.set({
         ...current,
         marketingConsentStatus: request.marketing,

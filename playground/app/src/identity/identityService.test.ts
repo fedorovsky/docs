@@ -1,4 +1,4 @@
-import type { IdentityApi } from '../api/identityApi';
+import type { IdentityBridge } from '../bridge/identityBridge';
 import { createIdentityObserver } from './identityObserver';
 import { createIdentityService } from './identityService';
 import { ConsentStatus, type IdentityFields } from './types';
@@ -13,12 +13,12 @@ const config: IdentityFields = {
   analyticsConsentStatus: ConsentStatus.NotDecided,
 };
 
-function setup(api: Partial<IdentityApi>) {
+function setup(bridge: Partial<IdentityBridge>) {
   const observer = createIdentityObserver();
   const subscriber = vi.fn();
   observer.subscribe(subscriber);
   const service = createIdentityService(
-    { getConfig: vi.fn().mockResolvedValue(config), updateConsent: vi.fn(), ...api },
+    { getConfig: vi.fn().mockResolvedValue(config), updateConsent: vi.fn(), ...bridge },
     observer,
   );
   return { observer, subscriber, service };
@@ -55,7 +55,7 @@ test('a successful save merges statuses from the request and IDs from the respon
 });
 
 test('a failed save rejects and leaves the observer untouched', async () => {
-  const { observer, subscriber, service } = setup({ updateConsent: vi.fn().mockRejectedValue(new Error('Fake backend error')) });
+  const { observer, subscriber, service } = setup({ updateConsent: vi.fn().mockRejectedValue(new Error('Fake bridge error')) });
   await service.start();
   await expect(service.saveConsent({ marketing: ConsentStatus.Accepted, analytics: ConsentStatus.Accepted })).rejects.toThrow();
   expect(observer.get()).toEqual(config);

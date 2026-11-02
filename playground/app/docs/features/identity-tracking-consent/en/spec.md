@@ -17,12 +17,12 @@ links: [TRACK-12]
 
 ## Summary
 
-An identity service loads the startup config through an `IdentityApi`, pushes the seven identity fields into an identity observer and saves consent through the same API; the observer calls three recording subscribers (request headers, analytics collector, game config) at start and whenever a field changes. Until the backend ships, `IdentityApi` is a fake that keeps the choice in `localStorage` and answers with a delay and occasional errors. The UI is one page with the two consent blocks and the three monitoring blocks. See the [PRD](./prd.md) for the why.
+An identity service loads the startup config through the native bridge (`IdentityBridge`), pushes the seven identity fields into an identity observer and saves consent through the same bridge; the observer calls three recording subscribers (request headers, analytics collector, game config) at start and whenever a field changes. Until the native bridge ships, `IdentityBridge` is a fake that keeps the choice in `localStorage` and answers with a delay and occasional errors. The UI is one page with the two consent blocks and the three monitoring blocks. See the [PRD](./prd.md) for the why.
 
 ## Context & current state
 
 - The project `playground/app/` is empty: no `package.json`, no source. The playground README describes it as a React + TypeScript frontend, so the first task scaffolds a Vite + React + TypeScript app with Vitest; all paths below are new and relative to `playground/app/`.
-- There is no backend. The config and consent methods are in progress and the agreed contract isn't attached to the ticket (Spec Q1); the fake implements the field names of TRACK-12 and the shapes in *API / interfaces*.
+- There is no native bridge yet: the config and consent methods of the host app are in progress and the agreed contract isn't attached to the ticket (Spec Q1); the fake implements the field names of TRACK-12 and the shapes in *API / interfaces*.
 - There is no HTTP client, analytics collector or game config in the app, so the three subscribers record what they receive instead of calling real systems.
 
 ## Proposed design
@@ -33,21 +33,21 @@ An identity service loads the startup config through an `IdentityApi`, pushes th
 sequenceDiagram
   participant Main as main.tsx
   participant Service as identityService
-  participant Api as fakeIdentityApi
+  participant Bridge as fakeIdentityBridge
   participant Storage as localStorage
   participant Observer as identityObserver
   participant Subs as subscribers
   Main->>Observer: subscribe(requestHeaders, analyticsCollector, gameConfig)
   Main->>Service: start()
-  Service->>Api: getConfig()
-  Api->>Storage: read saved choice
-  Api-->>Service: IdentityFields
+  Service->>Bridge: getConfig()
+  Bridge->>Storage: read saved choice
+  Bridge-->>Service: IdentityFields
   Service->>Observer: set(fields)
   Observer->>Subs: call each with all fields
   Note over Service: user presses Save or Accept all
-  Service->>Api: updateConsent(request)
-  Api->>Storage: write new choice
-  Api-->>Service: ConsentResponse
+  Service->>Bridge: updateConsent(request)
+  Bridge->>Storage: write new choice
+  Bridge-->>Service: ConsentResponse
   Service->>Observer: set(fields)
   Observer->>Subs: call each, only if a field changed
 ```
@@ -57,17 +57,17 @@ sequenceDiagram
 - `src/identity/types.ts` — new: `ConsentStatus` (`Declined = 0`, `Accepted = 1`, `NotDecided = 2`), `IdentityFields` (the seven config fields), `ConsentRequest`, `ConsentResponse`.
 - `src/identity/identityObserver.ts` — new: `createIdentityObserver()` with `set(fields)`, `get()`, `subscribe(fn)`. `set` stores the fields and calls every subscriber when it is the first set or any of the seven fields differs (strict equality per field); otherwise it does nothing. A subscriber added after the first `set` is called at once with the current fields. `subscribe` and `get` also serve React through `useSyncExternalStore`.
 - `src/identity/useIdentity.ts` — new: `useIdentity(observer)`, the `useSyncExternalStore` hook both consent blocks use.
-- `src/identity/identityService.ts` — new: `createIdentityService(api, observer)` with `start()` (calls `getConfig`, then `observer.set`) and `saveConsent(request)` (calls `updateConsent`; on success merges the two statuses from the request and the two IDs from the response into the current fields and calls `observer.set`; on failure rethrows and touches nothing).
-- `src/api/identityApi.ts` — new: the `IdentityApi` interface; the real backend adapter will implement it later.
-- `src/api/fakeIdentityApi.ts` — new: `createFakeIdentityApi(options)`; behaviour in *Data model* and *API / interfaces*.
+- `src/identity/identityService.ts` — new: `createIdentityService(bridge, observer)` with `start()` (calls `getConfig`, then `observer.set`) and `saveConsent(request)` (calls `updateConsent`; on success merges the two statuses from the request and the two IDs from the response into the current fields and calls `observer.set`; on failure rethrows and touches nothing).
+- `src/bridge/identityBridge.ts` — new: the `IdentityBridge` interface, the native bridge contract (config and consent); the real bridge adapter will implement it later.
+- `src/bridge/fakeIdentityBridge.ts` — new: `createFakeIdentityBridge(options)`; behaviour in *Data model* and *API / interfaces*.
 - `src/subscribers/recorder.ts` — new: `createRecorder(project)` wraps a projection `(fields) => state` into a subscriber that stores the projected state with `updatedAt` and exposes `getSnapshot()` / `subscribe(fn)` for the monitoring UI.
 - `src/subscribers/requestHeaders.ts`, `src/subscribers/analyticsCollector.ts`, `src/subscribers/gameConfig.ts` — new: the three projections of *Subscriber fields*.
 - `src/ui/ConsentBlock.tsx` — new: one component for both blocks (`variant: 'initial' | 'settings'`); two toggles, "Save", "Accept all", pending and error state.
 - `src/ui/MonitoringBlock.tsx` — new: a recorder's state as formatted JSON plus the update time.
 - `src/ui/StartPanel.tsx` — new: the debug start panel at the top of the page: a `consentRequired` switch (on by default) and a "Start" button, disabled while a start is pending.
 - `src/ui/ConfigBlock.tsx` — new: the observer's current seven fields as formatted JSON, at the top of the page.
-- `src/App.tsx` — the page: the start panel; on "Start" creates the API through `createApi(consentRequired)` and a new `identityService`, calls `start()` and keeps its pending and error state; once the observer has fields, the config block, the two consent blocks by their visibility rules and the three monitoring blocks.
-- `src/main.tsx` — wiring: creates the observer and the three recorders, subscribes the recorders and renders `App` with `createApi = (consentRequired) => createFakeIdentityApi({ consentRequired })`.
+- `src/App.tsx` — the page: the start panel; on "Start" creates the bridge through `createBridge(consentRequired)` and a new `identityService`, calls `start()` and keeps its pending and error state; once the observer has fields, the config block, the two consent blocks by their visibility rules and the three monitoring blocks.
+- `src/main.tsx` — wiring: creates the observer and the three recorders, subscribes the recorders and renders `App` with `createBridge = (consentRequired) => createFakeIdentityBridge({ consentRequired })`.
 
 #### Subscriber fields
 
@@ -111,7 +111,7 @@ Fake storage: the `localStorage` key `track12.identity` holds `{ marketingConsen
 ### API / interfaces
 
 ```ts
-interface IdentityApi {
+interface IdentityBridge {
   getConfig(): Promise<IdentityFields>;
   updateConsent(request: ConsentRequest): Promise<ConsentResponse>;
 }
@@ -130,9 +130,9 @@ interface ConsentRequest { marketing: ConsentStatus; analytics: ConsentStatus } 
 interface ConsentResponse { marketingTrackingId: string | null; analyticsTrackingId: string | null }
 ```
 
-Fake behaviour, `createFakeIdentityApi({ consentRequired, delayMs = [300, 1000], errorRate = 0.1, random = Math.random, storage = localStorage })`:
+Fake behaviour, `createFakeIdentityBridge({ consentRequired, delayMs = [300, 1000], errorRate = 0.1, random = Math.random, storage = localStorage })`:
 
-- Every call waits a random `delayMs`. `updateConsent` then fails with probability `errorRate` (`Error("Fake backend error")`) before touching storage; `getConfig` never fails for now (PRD R11).
+- Every call waits a random `delayMs`. `updateConsent` then fails with probability `errorRate` (`Error("Fake bridge error")`) before touching storage; `getConfig` never fails for now (PRD R11).
 - `getConfig` with `consentRequired = true`: statuses and IDs from storage, or `NotDecided` / `null` when nothing is stored.
 - `getConfig` with `consentRequired = false`: both statuses `Accepted`; IDs from storage when present, otherwise issued and stored; stored statuses are ignored.
 - `updateConsent`, per field: `Accepted` with stored status `Accepted` → the same ID; `Accepted` otherwise → a new ID; `Declined` → `null`. Both statuses and both IDs are stored together after the error check, so a failing call changes nothing.
@@ -154,7 +154,7 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 | R9 | The three projections in *Subscriber fields* | Subscriber fields |
 | R10 | `ConfigBlock` on the observer and `MonitoringBlock` per recorder, re-rendered through `useSyncExternalStore` | Components & changes |
 | R11 | The fake with delay, `errorRate` and `localStorage` | API / interfaces |
-| R12 | `StartPanel` and the start handling in `App`: a new fake API and service per "Start" | Components & changes |
+| R12 | `StartPanel` and the start handling in `App`: a new fake bridge and service per "Start" | Components & changes |
 
 ## Alternatives & decisions
 
@@ -170,9 +170,9 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 
 ## Edge cases & error handling
 
-- `start()` fails (the fake never fails here; a real backend may) → the page shows "Could not load the config." and "Retry"; no subscriber is called; "Retry" starts again with the switch's current value.
+- `start()` fails (the fake never fails here; the real bridge may) → the page shows "Could not load the config." and "Retry"; no subscriber is called; "Retry" starts again with the switch's current value.
 - "Start" pressed while a start is in flight → impossible, the button is disabled.
-- "Start" pressed again after a successful start → a new fake API and service; the observer gets the new config (a new `temporaryId` at least), so the subscribers are called; a failed restart leaves the previous state on the page and shows the error.
+- "Start" pressed again after a successful start → a new fake bridge and service; the observer gets the new config (a new `temporaryId` at least), so the subscribers are called; a failed restart leaves the previous state on the page and shows the error.
 - A save fails → the service rejects, the observer is untouched, the block shows the error and keeps the toggles as the user set them; "Save" and "Accept all" are enabled again.
 - A save that changes nothing (both already `Accepted`, both toggles on) → the fake returns the same IDs, `observer.set` sees no change, no subscriber is called, monitoring times stay.
 - Both consents `Declined`, both toggles off, "Save" → both stay `Declined` with `null` IDs; no change, no subscriber call.
@@ -190,7 +190,7 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 
 ## Testing plan
 
-- Unit (Vitest): `identityObserver` (first set calls, a changed field calls, an identical set doesn't, a late subscriber is called); `fakeIdentityApi` (first start, `consentRequired = false`, the ID rules of R6, atomic failure, persistence through a fake storage); `identityService` (start and save paths, a failure leaves the observer untouched); the three projections (both `consentRequired` modes, a `null` header dropped, `null` kept elsewhere).
+- Unit (Vitest): `identityObserver` (first set calls, a changed field calls, an identical set doesn't, a late subscriber is called); `fakeIdentityBridge` (first start, `consentRequired = false`, the ID rules of R6, atomic failure, persistence through a fake storage); `identityService` (start and save paths, a failure leaves the observer untouched); the three projections (both `consentRequired` modes, a `null` header dropped, `null` kept elsewhere).
 - Component (Vitest + Testing Library): `ConsentBlock` (visibility per variant, an off toggle saves `Declined`, "Accept all", disabled while pending, error text with toggles kept; R3–R5, R7); `MonitoringBlock` (state and time update) and `ConfigBlock` (all seven fields, re-rendered on change; R10).
 - Component (Vitest + Testing Library): `App` (nothing but the start panel before "Start", start in both modes, restart in the other mode, failed start with "Retry"; R12).
 - Manual, in the browser, in both modes: the PRD acceptance criteria of R1–R11, including a failed save, a revoke-and-accept cycle and a reload.
@@ -201,6 +201,6 @@ The release is the rollout: one frontend deploy, no migrations and no backend ch
 
 ## Open questions
 
-- [ ] **Q1.** The agreed backend contract isn't attached to the ticket: do the field names, status codes and the consent method shape match *API / interfaces*? — backend team
+- [ ] **Q1.** The agreed native bridge contract isn't attached to the ticket: do the method names, field names, status codes and the consent method shape match *API / interfaces*? — native app team
 - [ ] **Q2.** Where and how is the app deployed? The repo has no pipeline. — TBD
 - [ ] **Q3.** Do the header names in *Subscriber fields* suit the backend? — backend team

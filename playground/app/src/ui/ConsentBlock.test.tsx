@@ -88,7 +88,7 @@ test('buttons and toggles are disabled while a call is pending', async () => {
 
 test('a failed save shows the error and keeps the toggles as the user left them', async () => {
   const user = userEvent.setup();
-  setup(undecided, 'initial', vi.fn().mockRejectedValue(new Error('Fake backend error')));
+  setup(undecided, 'initial', vi.fn().mockRejectedValue(new Error('Fake bridge error')));
   await user.click(screen.getByRole('switch', { name: 'Analytics' }));
   await user.click(screen.getByRole('button', { name: 'Save' }));
   expect(await screen.findByRole('alert')).toHaveTextContent(SAVE_ERROR_TEXT);

@@ -17,21 +17,21 @@ links: [TRACK-12]
 
 ## Summary
 
-The app learns the user's identity from a startup config and asks for marketing and analytics tracking consent in two inline blocks on one page. Every consumer of identity (backend request headers, the analytics collector, the game config) receives the current identity fields at start and after every change. The backend isn't ready, so the app works against simulated config and consent methods that follow the agreed contract; three debug monitoring blocks show what each consumer received.
+The app learns the user's identity from a startup config and asks for marketing and analytics tracking consent in two inline blocks on one page. Every consumer of identity (backend request headers, the analytics collector, the game config) receives the current identity fields at start and after every change. Both the config and the consent call are methods of the host app's native bridge (the ticket says "backend"; the product owner clarified this on 2026-11-02). The bridge isn't ready, so the app works against simulated bridge methods that follow the agreed contract; three debug monitoring blocks show what each consumer received.
 
 ## Problem
 
-The app has no notion of user identity and no way to ask for tracking consent, so marketing and analytics tracking cannot depend on the user's decision and requests to the backend carry no identity fields. The ticket (TRACK-12) targets all users of the app but gives no evidence or legal driver for the consent requirement (see Q5). Without the feature the app can't start using tracking IDs when the backend ships the real config and consent methods.
+The app has no notion of user identity and no way to ask for tracking consent, so marketing and analytics tracking cannot depend on the user's decision and requests to the backend carry no identity fields. The ticket (TRACK-12) targets all users of the app but gives no evidence or legal driver for the consent requirement (see Q5). Without the feature the app can't start using tracking IDs when the native bridge ships the real config and consent methods.
 
 ## Goals
 
 - The user decides on marketing and analytics tracking separately and can give or revoke each consent at any time.
 - Every consumer of identity has the current identity fields at all times, without a page reload.
-- The app is ready for the real config and consent methods before the backend ships them.
+- The app is ready for the real config and consent methods before the native bridge ships them.
 
 ## Non-goals
 
-- Integration with the real backend: the config and consent methods are simulated until the backend ships.
+- Integration with the real native bridge: the config and consent methods are simulated until the bridge ships.
 - Actually sending request headers, analytics events or game-config requests: the three consumers only record what they receive.
 - Consent categories other than marketing and analytics.
 - Consent as a modal, banner or separate screen.
@@ -45,7 +45,7 @@ The user is anyone who opens the app. All consent UI lives on the one page the a
 - As a user, I want to choose marketing and analytics tracking separately when I first open the app, so that I allow only what I'm comfortable with.
 - As a user, I want to revoke a consent later in settings, so that my first choice isn't final.
 - As a user, I want to accept everything in one click, so that I'm not forced through two toggles.
-- As a developer, I want to see what each consumer of identity received and when, so that I can check the flow without the real backend.
+- As a developer, I want to see what each consumer of identity received and when, so that I can check the flow without the real native bridge.
 
 ```mermaid
 flowchart TD
@@ -80,7 +80,7 @@ flowchart TD
 | R9 | Three consumers record what they receive: all three record both tracking IDs and `temporaryId`; with `consentRequired = false` also `deviceId`; with `true` both consent statuses instead and never `deviceId`. Request headers also carry `consentRequired` and drop any header whose value is `null`; the analytics collector and the game config keep `null` as is | Must | With `consentRequired = true`: no `deviceId` in any monitoring block; the headers block has no header for a `null` ID; the analytics and game-config blocks show `null` |
 | R10 | Debug monitoring: a config block at the top of the page showing the seven identity fields the app currently holds, and three blocks next to the settings block, one per consumer, showing its current recorded state and the time of the last update | Must | After start the config block shows all seven fields; after each change the config block and the three consumer blocks show the new fields (and a new time) immediately, without a reload |
 | R12 | Debug start: the page opens with a start panel holding a `consentRequired` switch and a "Start" button; the config is loaded only when "Start" is pressed, with the switch's value; pressing it again restarts with the current value | Must | Open the page: no config, consent or monitoring blocks until "Start"; start with the switch off: no consent blocks; press "Start" again with it on: the settings block appears without a reload |
-| R11 | The app works without the real backend: the simulated config and consent methods respond with a delay and remember the user's choice between reloads; the consent method sometimes fails, the config method doesn't fail for now | Must | Reload after accepting: both statuses Accepted with the same IDs and no initial block; a save fails now and then, a start never does |
+| R11 | The app works without the real native bridge: the simulated config and consent methods respond with a delay and remember the user's choice between reloads; the consent method sometimes fails, the config method doesn't fail for now | Must | Reload after accepting: both statuses Accepted with the same IDs and no initial block; a save fails now and then, a start never does |
 
 ## Success metrics
 
@@ -90,7 +90,7 @@ flowchart TD
 
 ## Risks & dependencies
 
-- Backend team: the real config and consent methods are in progress; the agreed contract isn't attached to the ticket (Spec Q1). The simulation follows the ticket's field names.
+- Native app team: the real bridge methods for config and consent are in progress; the agreed contract isn't attached to the ticket (Spec Q1). The simulation follows the ticket's field names.
 - Design: no mockups for the consent or monitoring blocks (Q4).
 - Legal: the driver for the consent requirement is not stated (Q5).
 

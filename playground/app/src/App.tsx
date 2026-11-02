@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { IdentityApi } from './api/identityApi';
+import type { IdentityBridge } from './bridge/identityBridge';
 import type { IdentityObserver } from './identity/identityObserver';
 import { createIdentityService, type IdentityService } from './identity/identityService';
 import { useIdentity } from './identity/useIdentity';
@@ -14,19 +14,19 @@ export const LOAD_ERROR_TEXT = 'Could not load the config.';
 export interface AppProps {
   observer: IdentityObserver;
   recorders: Recorder<unknown>[];
-  createApi(consentRequired: boolean): IdentityApi;
+  createBridge(consentRequired: boolean): IdentityBridge;
 }
 
 type StartState = 'idle' | 'pending' | 'failed' | 'ready';
 
-export function App({ observer, recorders, createApi }: AppProps) {
+export function App({ observer, recorders, createBridge }: AppProps) {
   const fields = useIdentity(observer);
   const [consentRequired, setConsentRequired] = useState(true);
   const [service, setService] = useState<IdentityService | null>(null);
   const [start, setStart] = useState<StartState>('idle');
 
   function handleStart() {
-    const next = createIdentityService(createApi(consentRequired), observer);
+    const next = createIdentityService(createBridge(consentRequired), observer);
     setService(next);
     setStart('pending');
     next

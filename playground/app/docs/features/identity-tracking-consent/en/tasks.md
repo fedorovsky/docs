@@ -31,10 +31,10 @@ Delivers the identity flow of the [Spec](./spec.md): scaffold, fake API, observe
   - Change: `ConsentStatus`, `IdentityFields`, `ConsentRequest`, `ConsentResponse` and `createIdentityObserver` as in Spec *Components & changes*
   - Done when: tests show subscribers called on the first `set`, on a changed field, not on an identical `set`, and a late subscriber called at once
   - Depends on: T1
-- [x] **T3. Implement the fake identity API**
+- [x] **T3. Implement the fake identity bridge**
   - Covers: R1, R2, R6, R11
-  - Files: `src/api/identityApi.ts`, `src/api/fakeIdentityApi.ts`, `src/api/fakeIdentityApi.test.ts`
-  - Change: `IdentityApi` and `createFakeIdentityApi` with delay, error rate, storage and the ID rules (Spec *API / interfaces*)
+  - Files: `src/bridge/identityBridge.ts`, `src/bridge/fakeIdentityBridge.ts`, `src/bridge/fakeIdentityBridge.test.ts`
+  - Change: `IdentityBridge` and `createFakeIdentityBridge` with delay, error rate, storage and the ID rules (Spec *API / interfaces*)
   - Done when: tests cover the first start in both `consentRequired` modes, the same ID on Accepted → Accepted, a new ID after Declined or NotDecided, `null` on Declined, a failing call storing nothing, and a fresh `temporaryId` per call
   - Depends on: T2
 - [x] **T4. Implement the identity service**
@@ -64,7 +64,7 @@ Delivers the identity flow of the [Spec](./spec.md): scaffold, fake API, observe
 - [x] **T8. Wire the page**
   - Covers: R1, R2, R3, R4, R8, R10
   - Files: `src/main.tsx`, `src/App.tsx`, `src/App.test.tsx`
-  - Change: create the fake API from the `?consentRequired` query, the observer, the service and the recorders; `App` shows loading, the error with "Retry", the two blocks by their visibility rules and the three monitoring blocks (Spec *Components & changes*). This is the feature's entry point, added last.
+  - Change: create the fake bridge from the `?consentRequired` query, the observer, the service and the recorders; `App` shows loading, the error with "Retry", the two blocks by their visibility rules and the three monitoring blocks (Spec *Components & changes*). This is the feature's entry point, added last.
   - Done when: `App` tests show both blocks with `consentRequired = true` and NotDecided, only settings once both are decided, none with `false`; the page runs in the browser
   - Depends on: T6, T7
 - [x] **T9. Walk through the acceptance criteria**
@@ -76,7 +76,7 @@ Delivers the identity flow of the [Spec](./spec.md): scaffold, fake API, observe
 - [x] **T13. Replace the URL switch with a manual start panel**
   - Covers: R12
   - Files: `src/ui/StartPanel.tsx`, `src/App.tsx`, `src/App.test.tsx`, `src/main.tsx`
-  - Change: the start panel with the `consentRequired` switch and "Start"; `App` creates the fake API and service per "Start" (Spec *Components & changes*)
+  - Change: the start panel with the `consentRequired` switch and "Start"; `App` creates the fake bridge and service per "Start" (Spec *Components & changes*)
   - Done when: `App` tests show only the panel before "Start", both modes, a restart in the other mode and a failed start with "Retry"; in the browser the mode switches without a reload
   - Depends on: T12
 - [ ] **T10. Apply the final design and copy**
@@ -102,6 +102,6 @@ Delivers the identity flow of the [Spec](./spec.md): scaffold, fake API, observe
 - [x] **T13. Replace the URL switch with a manual start panel**
   - Covers: R12
   - Files: `src/ui/StartPanel.tsx`, `src/App.tsx`, `src/App.test.tsx`, `src/main.tsx`
-  - Change: the start panel with the `consentRequired` switch and "Start"; `App` creates the fake API and service per "Start" (Spec *Components & changes*)
+  - Change: the start panel with the `consentRequired` switch and "Start"; `App` creates the fake bridge and service per "Start" (Spec *Components & changes*)
   - Done when: `App` tests show only the panel before "Start", both modes, a restart in the other mode and a failed start with "Retry"; in the browser the mode switches without a reload
   - Depends on: T12

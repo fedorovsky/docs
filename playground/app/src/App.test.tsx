@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { App, LOAD_ERROR_TEXT } from './App';
-import type { IdentityApi } from './api/identityApi';
+import type { IdentityBridge } from './bridge/identityBridge';
 import { createIdentityObserver } from './identity/identityObserver';
 import { ConsentStatus, type IdentityFields } from './identity/types';
 import { createAnalyticsCollectorSubscriber } from './subscribers/analyticsCollector';
@@ -29,36 +29,36 @@ const accepted: IdentityFields = {
   analyticsTrackingId: 'a-1',
 };
 
-/** A fake-like API: the config follows the consentRequired the App asked for. */
-function setup(api: Partial<IdentityApi> = {}) {
+/** A fake-like bridge: the config follows the consentRequired the App asked for. */
+function setup(bridge: Partial<IdentityBridge> = {}) {
   const observer = createIdentityObserver();
   const recorders = [createRequestHeadersSubscriber(), createAnalyticsCollectorSubscriber(), createGameConfigSubscriber()];
   for (const recorder of recorders) observer.subscribe(recorder.handle);
-  const createApi = vi.fn((consentRequired: boolean): IdentityApi => ({
+  const createBridge = vi.fn((consentRequired: boolean): IdentityBridge => ({
     getConfig: vi.fn().mockResolvedValue(consentRequired ? undecided : { ...accepted, temporaryId: 'tmp-2' }),
     updateConsent: vi.fn(),
-    ...api,
+    ...bridge,
   }));
-  render(<App observer={observer} recorders={recorders} createApi={createApi} />);
-  return { observer, recorders, createApi, user: userEvent.setup() };
+  render(<App observer={observer} recorders={recorders} createBridge={createBridge} />);
+  return { observer, recorders, createBridge, user: userEvent.setup() };
 }
 
 const startButton = () => screen.getByRole('button', { name: 'Start' });
 const consentSwitch = () => screen.getByRole('switch', { name: 'consentRequired' });
 
 test('before Start only the start panel is shown, with consentRequired on', () => {
-  const { createApi } = setup();
+  const { createBridge } = setup();
   expect(consentSwitch()).toBeChecked();
-  expect(createApi).not.toHaveBeenCalled();
+  expect(createBridge).not.toHaveBeenCalled();
   expect(screen.queryByRole('region', { name: 'Config' })).not.toBeInTheDocument();
   expect(screen.queryByRole('heading', { name: 'Tracking consent' })).not.toBeInTheDocument();
   expect(screen.queryByRole('region', { name: 'Request headers' })).not.toBeInTheDocument();
 });
 
 test('Start with consentRequired = true and NotDecided: config, both blocks and three monitoring blocks', async () => {
-  const { user, createApi } = setup();
+  const { user, createBridge } = setup();
   await user.click(startButton());
-  expect(createApi).toHaveBeenCalledWith(true);
+  expect(createBridge).toHaveBeenCalledWith(true);
   expect(await screen.findByRole('heading', { name: 'Tracking consent' })).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Tracking settings' })).toBeInTheDocument();
   const config = screen.getByRole('region', { name: 'Config' });
@@ -78,10 +78,10 @@ test('only the settings block once both consents are decided', async () => {
 });
 
 test('Start with the switch off: no consent blocks, monitoring shows both IDs and deviceId', async () => {
-  const { user, createApi } = setup();
+  const { user, createBridge } = setup();
   await user.click(consentSwitch());
   await user.click(startButton());
-  expect(createApi).toHaveBeenCalledWith(false);
+  expect(createBridge).toHaveBeenCalledWith(false);
   const headers = await screen.findByRole('region', { name: 'Request headers' });
   expect(headers).toHaveTextContent('"X-Device-Id": "device-0001"');
   expect(headers).toHaveTextContent('"X-Analytics-Tracking-Id": "a-1"');
@@ -91,7 +91,7 @@ test('Start with the switch off: no consent blocks, monitoring shows both IDs an
 });
 
 test('Start again in the other mode switches the page without a reload', async () => {
-  const { user, createApi } = setup();
+  const { user, createBridge } = setup();
   await user.click(consentSwitch());
   await user.click(startButton());
   await screen.findByRole('region', { name: 'Request headers' });
@@ -99,7 +99,7 @@ test('Start again in the other mode switches the page without a reload', async (
   await user.click(consentSwitch());
   await user.click(startButton());
   expect(await screen.findByRole('heading', { name: 'Tracking settings' })).toBeInTheDocument();
-  expect(createApi).toHaveBeenNthCalledWith(2, true);
+  expect(createBridge).toHaveBeenNthCalledWith(2, true);
   expect(screen.getByRole('region', { name: 'Config' })).toHaveTextContent('"consentRequired": true');
 });
 
@@ -125,7 +125,7 @@ test('a save in the initial block hides it and updates the monitoring', async ()
 });
 
 test('a failed start shows the error and Retry loads again', async () => {
-  const getConfig = vi.fn().mockRejectedValueOnce(new Error('Fake backend error')).mockResolvedValue(undecided);
+  const getConfig = vi.fn().mockRejectedValueOnce(new Error('Fake bridge error')).mockResolvedValue(undecided);
   const { user } = setup({ getConfig });
   await user.click(startButton());
   expect(await screen.findByRole('alert')).toHaveTextContent(LOAD_ERROR_TEXT);

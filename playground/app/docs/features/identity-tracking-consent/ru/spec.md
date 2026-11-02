@@ -17,12 +17,12 @@ links: [TRACK-12]
 
 ## Кратко
 
-Сервис identity загружает стартовый конфиг через `IdentityApi`, кладёт семь полей identity в обсервер identity и сохраняет согласие через тот же API; обсервер вызывает трёх запоминающих подписчиков (хедеры запросов, коллектор аналитики, гейм-конфиг) при старте и при каждом изменении поля. Пока бэкенд не готов, `IdentityApi` — фейк, который хранит выбор в `localStorage` и отвечает с задержкой и периодическими ошибками. UI — одна страница с двумя блоками согласия и тремя блоками мониторинга. Зачем это нужно, описано в [PRD](./prd.md).
+Сервис identity загружает стартовый конфиг через нативный бридж (`IdentityBridge`), кладёт семь полей identity в обсервер identity и сохраняет согласие через тот же бридж; обсервер вызывает трёх запоминающих подписчиков (хедеры запросов, коллектор аналитики, гейм-конфиг) при старте и при каждом изменении поля. Пока нативный бридж не готов, `IdentityBridge` — фейк, который хранит выбор в `localStorage` и отвечает с задержкой и периодическими ошибками. UI — одна страница с двумя блоками согласия и тремя блоками мониторинга. Зачем это нужно, описано в [PRD](./prd.md).
 
 ## Контекст и текущее состояние
 
 - Проект `playground/app/` пуст: нет `package.json`, нет исходников. README playground описывает его как фронтенд на React + TypeScript, поэтому первая задача создаёт каркас приложения Vite + React + TypeScript с Vitest; все пути ниже новые и указаны относительно `playground/app/`.
-- Бэкенда нет. Методы конфига и согласия в работе, согласованный контракт к тикету не приложен (Spec Q1); фейк реализует имена полей из TRACK-12 и форматы из раздела «API / интерфейсы».
+- Нативного бриджа пока нет: методы конфига и согласия хост-приложения в работе, согласованный контракт к тикету не приложен (Spec Q1); фейк реализует имена полей из TRACK-12 и форматы из раздела «API / интерфейсы».
 - В приложении нет HTTP-клиента, коллектора аналитики и гейм-конфига, поэтому три подписчика запоминают, что получили, вместо вызова реальных систем.
 
 ## Предлагаемое решение
@@ -33,21 +33,21 @@ links: [TRACK-12]
 sequenceDiagram
   participant Main as main.tsx
   participant Service as identityService
-  participant Api as fakeIdentityApi
+  participant Bridge as fakeIdentityBridge
   participant Storage as localStorage
   participant Observer as identityObserver
   participant Subs as subscribers
   Main->>Observer: subscribe(requestHeaders, analyticsCollector, gameConfig)
   Main->>Service: start()
-  Service->>Api: getConfig()
-  Api->>Storage: читает сохранённый выбор
-  Api-->>Service: IdentityFields
+  Service->>Bridge: getConfig()
+  Bridge->>Storage: читает сохранённый выбор
+  Bridge-->>Service: IdentityFields
   Service->>Observer: set(fields)
   Observer->>Subs: вызывает каждого со всеми полями
   Note over Service: пользователь нажимает Save или Accept all
-  Service->>Api: updateConsent(request)
-  Api->>Storage: пишет новый выбор
-  Api-->>Service: ConsentResponse
+  Service->>Bridge: updateConsent(request)
+  Bridge->>Storage: пишет новый выбор
+  Bridge-->>Service: ConsentResponse
   Service->>Observer: set(fields)
   Observer->>Subs: вызывает каждого, только если поле изменилось
 ```
@@ -57,17 +57,17 @@ sequenceDiagram
 - `src/identity/types.ts` — новый: `ConsentStatus` (`Declined = 0`, `Accepted = 1`, `NotDecided = 2`), `IdentityFields` (семь полей конфига), `ConsentRequest`, `ConsentResponse`.
 - `src/identity/identityObserver.ts` — новый: `createIdentityObserver()` с `set(fields)`, `get()`, `subscribe(fn)`. `set` сохраняет поля и вызывает каждого подписчика, если это первый set или любое из семи полей отличается (строгое равенство по полю); иначе ничего не делает. Подписчик, добавленный после первого `set`, сразу вызывается с текущими полями. `subscribe` и `get` также обслуживают React через `useSyncExternalStore`.
 - `src/identity/useIdentity.ts` — новый: `useIdentity(observer)`, хук `useSyncExternalStore`, которым пользуются оба блока согласия.
-- `src/identity/identityService.ts` — новый: `createIdentityService(api, observer)` со `start()` (вызывает `getConfig`, затем `observer.set`) и `saveConsent(request)` (вызывает `updateConsent`; при успехе сливает два статуса из запроса и два ID из ответа в текущие поля и вызывает `observer.set`; при ошибке пробрасывает её и ничего не трогает).
-- `src/api/identityApi.ts` — новый: интерфейс `IdentityApi`; адаптер настоящего бэкенда реализует его позже.
-- `src/api/fakeIdentityApi.ts` — новый: `createFakeIdentityApi(options)`; поведение в разделах «Модель данных» и «API / интерфейсы».
+- `src/identity/identityService.ts` — новый: `createIdentityService(bridge, observer)` со `start()` (вызывает `getConfig`, затем `observer.set`) и `saveConsent(request)` (вызывает `updateConsent`; при успехе сливает два статуса из запроса и два ID из ответа в текущие поля и вызывает `observer.set`; при ошибке пробрасывает её и ничего не трогает).
+- `src/bridge/identityBridge.ts` — новый: интерфейс `IdentityBridge`, контракт нативного бриджа (конфиг и согласие); адаптер настоящего бриджа реализует его позже.
+- `src/bridge/fakeIdentityBridge.ts` — новый: `createFakeIdentityBridge(options)`; поведение в разделах «Модель данных» и «API / интерфейсы».
 - `src/subscribers/recorder.ts` — новый: `createRecorder(project)` оборачивает проекцию `(fields) => state` в подписчика, который хранит спроецированное состояние с `updatedAt` и отдаёт `getSnapshot()` / `subscribe(fn)` для UI мониторинга.
 - `src/subscribers/requestHeaders.ts`, `src/subscribers/analyticsCollector.ts`, `src/subscribers/gameConfig.ts` — новые: три проекции из раздела «Поля подписчиков».
 - `src/ui/ConsentBlock.tsx` — новый: один компонент для обоих блоков (`variant: 'initial' | 'settings'`); два переключателя, "Save", "Accept all", состояния ожидания и ошибки.
 - `src/ui/MonitoringBlock.tsx` — новый: состояние рекордера в виде форматированного JSON плюс время обновления.
 - `src/ui/StartPanel.tsx` — новый: отладочная панель старта наверху страницы: переключатель `consentRequired` (по умолчанию включён) и кнопка "Start", отключённая, пока старт выполняется.
 - `src/ui/ConfigBlock.tsx` — новый: текущие семь полей обсервера в виде форматированного JSON, наверху страницы.
-- `src/App.tsx` — страница: панель старта; по "Start" создаёт API через `createApi(consentRequired)` и новый `identityService`, вызывает `start()` и держит его состояния ожидания и ошибки; как только у обсервера есть поля, показывает блок конфига, два блока согласия по правилам видимости и три блока мониторинга.
-- `src/main.tsx` — сборка: создаёт обсервер и три рекордера, подписывает рекордеры и рендерит `App` с `createApi = (consentRequired) => createFakeIdentityApi({ consentRequired })`.
+- `src/App.tsx` — страница: панель старта; по "Start" создаёт бридж через `createBridge(consentRequired)` и новый `identityService`, вызывает `start()` и держит его состояния ожидания и ошибки; как только у обсервера есть поля, показывает блок конфига, два блока согласия по правилам видимости и три блока мониторинга.
+- `src/main.tsx` — сборка: создаёт обсервер и три рекордера, подписывает рекордеры и рендерит `App` с `createBridge = (consentRequired) => createFakeIdentityBridge({ consentRequired })`.
 
 #### Поля подписчиков
 
@@ -111,7 +111,7 @@ stateDiagram-v2
 ### API / интерфейсы
 
 ```ts
-interface IdentityApi {
+interface IdentityBridge {
   getConfig(): Promise<IdentityFields>;
   updateConsent(request: ConsentRequest): Promise<ConsentResponse>;
 }
@@ -130,9 +130,9 @@ interface ConsentRequest { marketing: ConsentStatus; analytics: ConsentStatus } 
 interface ConsentResponse { marketingTrackingId: string | null; analyticsTrackingId: string | null }
 ```
 
-Поведение фейка, `createFakeIdentityApi({ consentRequired, delayMs = [300, 1000], errorRate = 0.1, random = Math.random, storage = localStorage })`:
+Поведение фейка, `createFakeIdentityBridge({ consentRequired, delayMs = [300, 1000], errorRate = 0.1, random = Math.random, storage = localStorage })`:
 
-- Каждый вызов ждёт случайную задержку из `delayMs`. `updateConsent` затем с вероятностью `errorRate` падает (`Error("Fake backend error")`) до обращения к хранилищу; `getConfig` пока не падает никогда (PRD R11).
+- Каждый вызов ждёт случайную задержку из `delayMs`. `updateConsent` затем с вероятностью `errorRate` падает (`Error("Fake bridge error")`) до обращения к хранилищу; `getConfig` пока не падает никогда (PRD R11).
 - `getConfig` при `consentRequired = true`: статусы и ID из хранилища или `NotDecided` / `null`, если ничего не сохранено.
 - `getConfig` при `consentRequired = false`: оба статуса `Accepted`; ID из хранилища, если есть, иначе выдаются и сохраняются; сохранённые статусы игнорируются.
 - `updateConsent`, по каждому полю: `Accepted` при сохранённом статусе `Accepted` → тот же ID; `Accepted` в остальных случаях → новый ID; `Declined` → `null`. Оба статуса и оба ID сохраняются вместе после проверки на ошибку, поэтому упавший вызов ничего не меняет.
@@ -154,7 +154,7 @@ interface ConsentResponse { marketingTrackingId: string | null; analyticsTrackin
 | R9 | Три проекции из раздела «Поля подписчиков» | Поля подписчиков |
 | R10 | `ConfigBlock` на обсервере и `MonitoringBlock` на каждый рекордер, перерисовываются через `useSyncExternalStore` | Компоненты и изменения |
 | R11 | Фейк с задержкой, `errorRate` и `localStorage` | API / интерфейсы |
-| R12 | `StartPanel` и обработка старта в `App`: новые фейковый API и сервис на каждый "Start" | Компоненты и изменения |
+| R12 | `StartPanel` и обработка старта в `App`: новые фейковый бридж и сервис на каждый "Start" | Компоненты и изменения |
 
 ## Альтернативы и решения
 
@@ -170,9 +170,9 @@ interface ConsentResponse { marketingTrackingId: string | null; analyticsTrackin
 
 ## Граничные случаи и обработка ошибок
 
-- `start()` падает (фейк здесь не падает никогда; настоящий бэкенд может) → страница показывает "Could not load the config." и "Retry"; ни один подписчик не вызывается; "Retry" запускает снова с текущим значением переключателя.
+- `start()` падает (фейк здесь не падает никогда; настоящий бридж может) → страница показывает "Could not load the config." и "Retry"; ни один подписчик не вызывается; "Retry" запускает снова с текущим значением переключателя.
 - "Start" нажат, пока старт выполняется → невозможно, кнопка отключена.
-- "Start" нажат снова после успешного старта → новые фейковый API и сервис; обсервер получает новый конфиг (как минимум новый `temporaryId`), поэтому подписчики вызываются; упавший перезапуск оставляет на странице прежнее состояние и показывает ошибку.
+- "Start" нажат снова после успешного старта → новые фейковый бридж и сервис; обсервер получает новый конфиг (как минимум новый `temporaryId`), поэтому подписчики вызываются; упавший перезапуск оставляет на странице прежнее состояние и показывает ошибку.
 - Сохранение падает → сервис отклоняет промис, обсервер не тронут, блок показывает ошибку и оставляет переключатели как их выставил пользователь; "Save" и "Accept all" снова включены.
 - Сохранение без изменений (оба уже `Accepted`, оба переключателя включены) → фейк возвращает те же ID, `observer.set` не видит изменений, ни один подписчик не вызывается, время в мониторинге не меняется.
 - Оба согласия `Declined`, оба переключателя выключены, "Save" → оба остаются `Declined` с `null` ID; изменений нет, подписчики не вызываются.
@@ -190,7 +190,7 @@ interface ConsentResponse { marketingTrackingId: string | null; analyticsTrackin
 
 ## План тестирования
 
-- Unit (Vitest): `identityObserver` (первый set вызывает, изменённое поле вызывает, идентичный set не вызывает, поздний подписчик вызывается); `fakeIdentityApi` (первый старт, `consentRequired = false`, правила ID из R6, атомарный сбой, сохранение через фейковое хранилище); `identityService` (пути старта и сохранения, сбой не трогает обсервер); три проекции (оба режима `consentRequired`, хедер с `null` отброшен, `null` сохранён в остальных).
+- Unit (Vitest): `identityObserver` (первый set вызывает, изменённое поле вызывает, идентичный set не вызывает, поздний подписчик вызывается); `fakeIdentityBridge` (первый старт, `consentRequired = false`, правила ID из R6, атомарный сбой, сохранение через фейковое хранилище); `identityService` (пути старта и сохранения, сбой не трогает обсервер); три проекции (оба режима `consentRequired`, хедер с `null` отброшен, `null` сохранён в остальных).
 - Компонентные (Vitest + Testing Library): `ConsentBlock` (видимость по варианту, выключенный переключатель сохраняет `Declined`, "Accept all", отключение на время ожидания, текст ошибки с сохранёнными переключателями; R3–R5, R7); `MonitoringBlock` (обновление состояния и времени) и `ConfigBlock` (все семь полей, перерисовка при изменении; R10).
 - Компонентные (Vitest + Testing Library): `App` (до "Start" только панель старта, старт в обоих режимах, перезапуск в другом режиме, упавший старт с "Retry"; R12).
 - Ручные, в браузере, в обоих режимах: критерии приёмки R1–R11 из PRD, включая упавшее сохранение, цикл «отозвать и принять» и перезагрузку.
@@ -201,6 +201,6 @@ interface ConsentResponse { marketingTrackingId: string | null; analyticsTrackin
 
 ## Открытые вопросы
 
-- [ ] **Q1.** Согласованный контракт бэкенда к тикету не приложен: совпадают ли имена полей, коды статусов и формат метода согласия с разделом «API / интерфейсы»? — команда бэкенда
+- [ ] **Q1.** Согласованный контракт нативного бриджа к тикету не приложен: совпадают ли имена методов, имена полей, коды статусов и формат метода согласия с разделом «API / интерфейсы»? — команда нативного приложения
 - [ ] **Q2.** Где и как деплоится приложение? В репозитории нет пайплайна. — TBD
 - [ ] **Q3.** Подходят ли бэкенду имена хедеров из раздела «Поля подписчиков»? — команда бэкенда
