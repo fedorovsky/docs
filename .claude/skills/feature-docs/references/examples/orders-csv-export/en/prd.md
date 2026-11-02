@@ -10,6 +10,7 @@ reviewers: [Alex Kim, Sam Lee]
 created: 2026-03-02
 updated: 2026-03-12
 spec: ./spec.md
+tasks: ./tasks.md
 links: ["Jira: SHOP-412"]
 ---
 
@@ -54,10 +55,11 @@ Merchants reconcile orders in spreadsheets or accounting software. Today the onl
 | Metric | Baseline | Target | How measured |
 |--------|----------|--------|--------------|
 | Support tickets tagged "data export" per quarter | 140 | < 30 | Helpdesk tag report |
-| Merchants using export at least once per month | 0 | unknown — see Q1 | `orders_export_started` event |
+| Merchants using export at least once per month | 0 | unknown — see PRD Q1 | `orders_export_started` event |
 
 ## Open questions
 
 - [ ] **Q1.** What adoption target is realistic for monthly export usage? — Jane Doe
 - [ ] **Q2.** How many exports may a merchant run at the same time? — Jane Doe
 - [ ] **Q3.** In a store with several staff accounts, who receives the "export ready" email: the owner only, or the person who started it? — Jane Doe
+- [x] **Q4.** Do merchants need to choose which columns to export (R5)? — Jane Doe. Answered 2026-03-09: no demand in the merchant interviews; R5 dropped, revisit after launch.

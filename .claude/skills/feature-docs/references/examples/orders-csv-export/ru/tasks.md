@@ -6,6 +6,7 @@ lang: ru
 mirror: ../en/tasks.md
 status: draft
 owner: Alex Kim
+reviewers: [Sam Lee]
 created: 2026-03-13
 updated: 2026-03-13
 prd: ./prd.md

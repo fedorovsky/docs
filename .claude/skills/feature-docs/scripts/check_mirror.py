@@ -59,7 +59,7 @@ COVERS_LABELS = {"setup", "verify", "rollout"}
 REQ_ROW_RE = re.compile(r"^\s*\|\s*(R\d+)\s*\|(.*)$")
 NOT_COVERED_RE = re.compile(r"^\s*\*\*(?:Not covered|Не покрыто):\*\*")
 # Template scaffolding that must not survive into a real document.
-PLACEHOLDER_RE = re.compile(r"<[A-Za-zА-Яа-яЁё][^<>`\n]{0,200}>")
+PLACEHOLDER_RE = re.compile(r"<\S[^<>\n]{0,199}>")  # anything in angle brackets, except "a < b > c" prose
 OPTIONAL_MARK_RE = re.compile(r"\*\((?:optional|необязательно)\)\*")
 DATE_PLACEHOLDER = "YYYY-MM-DD"
 
@@ -83,6 +83,20 @@ def relative_link(src: Path, dst: Path) -> str:
     return os.path.relpath(dst, src.parent)
 
 
+def strip_comment(value: str) -> str:
+    """Drop a trailing YAML comment: '#' preceded by whitespace outside quotes ("PR: #12 — …" is kept)."""
+    quote = None
+    for i, ch in enumerate(value):
+        if quote:
+            if ch == quote:
+                quote = None
+        elif ch in "\"'":
+            quote = ch
+        elif ch == "#" and i > 0 and value[i - 1].isspace():
+            return value[:i].rstrip()
+    return value.strip()
+
+
 def parse_frontmatter(lines):
     """Return (dict, index of first body line). Values are raw strings, comments stripped."""
     if not lines or lines[0].strip() != "---":
@@ -93,13 +107,13 @@ def parse_frontmatter(lines):
             return data, i + 1
         m = re.match(r"^([\w-]+):\s*(.*)$", line)
         if m:
-            value = re.sub(r"\s+#.*$", "", m.group(2)).strip()
+            value = strip_comment(m.group(2))
             key = m.group(1)
             data[key] = value
             continue
         m = re.match(r"^\s+-\s+(.*)$", line)  # item of a multi-line list
         if m and data:
-            item = re.sub(r"\s+#.*$", "", m.group(1)).strip()
+            item = strip_comment(m.group(1))
             data[key] = (data[key] + "\n" if data[key] else "") + item
     return data, len(lines)
 
@@ -229,7 +243,8 @@ def lint_scaffolding(lines, start):
     """Template leftovers: <placeholders>, *(optional)* markers, YYYY-MM-DD, frontmatter comments."""
     issues = []
     for n, line in enumerate(lines[:start], start=1):
-        if re.search(r"\s#", line) and line.strip() != "---":
+        m = re.match(r"^(?:[\w-]+:|\s+-)\s*(.*)$", line)
+        if m and strip_comment(m.group(1)) != m.group(1).strip():
             issues.append(f"line {n}: frontmatter comment left from the template")
     in_fence = False
     for n, line in enumerate(lines[start:], start=start + 1):

@@ -69,7 +69,7 @@ Never substitute a plausible value for a missing metric, baseline, date or owner
 - Remove all scaffolding: angle-bracket placeholders, guidance text, *(optional)* markers, frontmatter comments.
 - Size to the feature: a small feature's PRD fits one screen. Tables and short bullets over prose.
 - English first, in English whatever language the sources are in; then the Russian mirror from the Russian template. Never draft the two independently.
-- Links: `prd:` / `spec:` point to siblings in the same language folder (`./prd.md`); `mirror:` points to the twin (`../ru/prd.md` from `en/`).
+- Links: `prd:` / `spec:` / `tasks:` point to the two siblings in the same language folder (`./prd.md`), so every document reaches the other two; `mirror:` points to the twin (`../ru/prd.md` from `en/`).
 - Sources: every external source (Jira, Figma, Confluence, a PR, research) is an entry in `links:` of the form `"Role: name — URL"` (`"Jira: TRACK-12"` alone when the key resolves in the team's tracker), in English in both versions, in the document it informs: tickets, designs and research in the PRD, PRs and technical pages in the Spec, the ticket and PRs in Tasks. A fact cites its source in the sentence that uses it (*Problem*, the metrics table, *Context & current state*, *Alternatives & decisions*). No bare URL anywhere, and no separate list of sources in the body.
 
 ### 5. Check and hand over
@@ -88,14 +88,14 @@ The hand-over message names the files, the assumptions the draft rests on (liste
 
 ### IDs
 
-`R1…` requirements, `Q1…` open questions (numbered per document), `T1…` tasks. IDs are permanent: never renumber. A dropped item stays ~~struck through~~ with a reason; a new one takes the next free number. Refer to questions by document and number, "PRD Q3" / "Spec Q1", identically in Russian ("см. PRD Q3"). An answered question is ticked, the answer written after it, and dependent text updated.
+`R1…` requirements, `Q1…` open questions (numbered per document), `T1…` tasks. IDs are permanent: never renumber. A dropped item stays ~~struck through~~ with a reason; a new one takes the next free number. Refer to questions by document and number, "PRD Q3" / "Spec Q1", identically in Russian ("см. PRD Q3"). An answered question is ticked and keeps its line, with the answer after the owner: `— Jane Doe. Answered 2026-03-09: …` (Russian: `Ответ 2026-03-09: …`); dependent text is updated in the same edit.
 
 A new item goes where it belongs in the order (a task where it runs, a requirement next to its neighbours), not at the end, so IDs may run out of file order. After inserting one, search the file for its ID: an edit that lands twice is how a duplicate appears, and the check script fails on it.
 
 ### PRD
 
 - Requirements table: ID, requirement, priority (MoSCoW: **Must** / **Should** / **Could**), at least one acceptance criterion a tester can check. **Must** is what the feature can't ship without; a debug aid, a convenience, or anything the PRD says will be removed later is **Should** or **Could**. A table that is all **Must** hasn't been prioritised. Criteria may name routes, permissions and analytics events; those are product facts, not implementation details. Stubs, mocks, test names and module names are implementation details: when a criterion can only be verified in automated tests, it says so and stops there.
-- Each success metric names a measurement source (an existing analytics event or dashboard is fine) and a target; an unknown baseline or target points to a question ("unknown — see Q2").
+- Each success metric names a measurement source (an existing analytics event or dashboard is fine) and a target; an unknown baseline or target points to a question ("unknown — see PRD Q2").
 - Product decisions the Spec needs but the PRD doesn't make belong in the PRD's open questions.
 
 ### Spec

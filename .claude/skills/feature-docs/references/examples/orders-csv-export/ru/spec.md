@@ -10,6 +10,7 @@ reviewers: [Sam Lee]
 created: 2026-03-10
 updated: 2026-03-12
 prd: ./prd.md
+tasks: ./tasks.md
 links: ["Jira: SHOP-412"]
 ---
 

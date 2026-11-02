@@ -10,6 +10,7 @@ reviewers: []
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 prd: ./prd.md
+tasks: ./tasks.md
 links: []                # "Role: name — URL", e.g. "Jira: TRACK-12 — https://…", "Confluence: tracking policy — https://…", "PR: consent banner — https://…"
 ---
 
@@ -46,6 +47,7 @@ links: []                # "Role: name — URL", e.g. "Jira: TRACK-12 — https:
 | PRD ID | How it's satisfied | Section |
 |--------|--------------------|---------|
 | R1 | <mechanism> | <link to section above> |
+| R2 | <mechanism> | <link to section above> |
 
 <Start the cell with **Partial:** or **Not covered:** when the design doesn't fully meet the requirement, and say what's missing.>
 

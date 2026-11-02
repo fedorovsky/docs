@@ -10,6 +10,7 @@ reviewers: []
 created: 2026-11-02
 updated: 2026-11-02
 spec: ./spec.md
+tasks: ./tasks.md
 links: ["Jira: TRACK-12"]
 ---
 
@@ -21,7 +22,7 @@ The app learns the user's identity from a startup config and asks for marketing 
 
 ## Problem
 
-The app has no notion of user identity and no way to ask for tracking consent, so marketing and analytics tracking cannot depend on the user's decision and requests to the backend carry no identity fields. The ticket (TRACK-12) targets all users of the app but gives no evidence or legal driver for the consent requirement (see Q5). Without the feature the app can't start using tracking IDs when the native bridge ships the real config and consent methods.
+The app has no notion of user identity and no way to ask for tracking consent, so marketing and analytics tracking cannot depend on the user's decision and requests to the backend carry no identity fields. The ticket (TRACK-12) targets all users of the app but gives no evidence or legal driver for the consent requirement (see PRD Q5). Without the feature the app can't start using tracking IDs when the native bridge ships the real config and consent methods.
 
 ## Goals
 
@@ -35,7 +36,7 @@ The app has no notion of user identity and no way to ask for tracking consent, s
 - Actually sending request headers, analytics events or game-config requests: the three consumers only record what they receive.
 - Consent categories other than marketing and analytics.
 - Consent as a modal, banner or separate screen.
-- Keeping the config block, the monitoring blocks and the start panel: they are a debug aid and will be removed later (see Q7).
+- Keeping the config block, the monitoring blocks and the start panel: they are a debug aid and will be removed later (see PRD Q7).
 - Final header names: the engineer proposes them in the Spec; the backend confirms them before the real integration.
 
 ## Users & scenarios
@@ -86,7 +87,7 @@ flowchart TD
 
 | Metric | Baseline | Target | How measured |
 |--------|----------|--------|--------------|
-| Users who decide both consents in their first session (`consentRequired = true`) | — (new feature) | unknown — see Q6 | unknown — see Q6; the app has no analytics events |
+| Users who decide both consents in their first session (`consentRequired = true`) | — (new feature) | unknown — see PRD Q6 | unknown — see PRD Q6; the app has no analytics events |
 
 ## Risks & dependencies
 

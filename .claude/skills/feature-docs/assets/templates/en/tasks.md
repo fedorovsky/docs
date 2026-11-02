@@ -6,6 +6,7 @@ lang: en
 mirror: ../ru/tasks.md
 status: draft            # draft | review | approved | shipped | deprecated
 owner: <name>
+reviewers: []
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 prd: ./prd.md
@@ -21,14 +22,14 @@ links: []                # "Role: name — URL", e.g. "Jira: TRACK-12 — https:
 
 - [ ] **T1. <Short imperative title>**
   - Covers: <R1, R2 — or one label: `setup`, `verify`, `rollout`>
-  - Files: <`path/to/file.ts`, `path/to/file.test.ts`>
+  - Files: <paths in backticks: path/to/file.ts, path/to/file.test.ts>
   - Change: <at most two sentences, pointing to the Spec section; more means split the task>
   - Done when: <a check anyone can run: tests that pass, behaviour to see>
   - Depends on: <T-ids, or "—">
 - [ ] **T2. <Short imperative title>**
-  - Covers: <R3>
-  - Files: <`path`>
+  - Covers: <R2>
+  - Files: <paths>
   - Change: <…>
   - Done when: <…>
   - Depends on: <T1>
-  - Blocked by: <PRD Q2 — the open question that must be answered first; track any other blocker as an open question too>
+  - Blocked by: <PRD Q1 — the open question that must be answered first; track any other blocker as an open question too>

@@ -10,6 +10,7 @@ reviewers: []
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 spec: ./spec.md
+tasks: ./tasks.md
 links: []                # "Role: name — URL", e.g. "Jira: TRACK-12 — https://…", "Figma: consent banner — https://…", "Confluence: tracking policy — https://…"
 ---
 
@@ -50,7 +51,7 @@ links: []                # "Role: name — URL", e.g. "Jira: TRACK-12 — https:
 
 | Метрика | Базовое значение | Цель | Как измеряем |
 |---------|------------------|------|--------------|
-| <метрика> | <текущее значение или «неизвестно — см. Q<n>»> | <цель> | <источник / дашборд / событие> |
+| <метрика> | <текущее значение или «неизвестно — см. PRD Q<n>»> | <цель> | <источник / дашборд / событие> |
 
 ## Риски и зависимости *(необязательно)*
 

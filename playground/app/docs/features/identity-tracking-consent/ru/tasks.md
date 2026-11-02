@@ -6,6 +6,7 @@ lang: ru
 mirror: ../en/tasks.md
 status: draft
 owner: a.fedorovskyi
+reviewers: []
 created: 2026-11-02
 updated: 2026-11-02
 prd: ./prd.md

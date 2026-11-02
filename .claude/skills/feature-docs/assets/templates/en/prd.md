@@ -10,6 +10,7 @@ reviewers: []
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 spec: ./spec.md
+tasks: ./tasks.md
 links: []                # "Role: name — URL", e.g. "Jira: TRACK-12 — https://…", "Figma: consent banner — https://…", "Confluence: tracking policy — https://…"
 ---
 
@@ -50,7 +51,7 @@ links: []                # "Role: name — URL", e.g. "Jira: TRACK-12 — https:
 
 | Metric | Baseline | Target | How measured |
 |--------|----------|--------|--------------|
-| <metric> | <current value or "unknown — see Q<n>"> | <target> | <source / dashboard / event> |
+| <metric> | <current value or "unknown — see PRD Q<n>"> | <target> | <source / dashboard / event> |
 
 ## Risks & dependencies *(optional)*
 
