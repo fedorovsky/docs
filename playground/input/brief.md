@@ -41,13 +41,11 @@ analyticsConsentStatus   то же
 
 Identity-поля — все семь полей конфига. Обсервер вызывает всех подписчиков со всеми полями: сразу при старте и при каждом изменении, без перезагрузки. Если после сохранения ничего не изменилось, не вызывает.
 
-Подписчики пока фейковые, просто запоминают, что пришло:
+Подписчиков три, пока фейковые: просто запоминают, что пришло. Все пишут оба tracking ID и `temporaryId`. При `consentRequired = false` к ним добавляется `deviceId`, при `true` вместо него `marketingConsentStatus` и `analyticsConsentStatus`; `deviceId` при `true` писать нельзя.
 
 1. Хедеры запросов к бэкенду: дополнительно `consentRequired`, хедер с `null` убирается, имена придумать.
 2. Коллектор аналитики: `null` пишется как есть.
 3. Гейм-конфиг: `null` пишется как есть.
-
-Все три пишут оба tracking ID и `temporaryId`. При `consentRequired = false` к ним добавляется `deviceId`, при `true` вместо него `marketingConsentStatus` и `analyticsConsentStatus`; `deviceId` при `true` писать нельзя.
 
 ## Мониторинг (отладка, потом уберём)
 
