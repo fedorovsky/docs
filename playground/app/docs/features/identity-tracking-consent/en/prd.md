@@ -35,7 +35,7 @@ The app has no notion of user identity and no way to ask for tracking consent, s
 - Actually sending request headers, analytics events or game-config requests: the three consumers only record what they receive.
 - Consent categories other than marketing and analytics.
 - Consent as a modal, banner or separate screen.
-- Keeping the monitoring blocks: they are a debug aid and will be removed later (see Q7).
+- Keeping the monitoring blocks and the start panel: they are a debug aid and will be removed later (see Q7).
 - Final header names: the engineer proposes them in the Spec; the backend confirms them before the real integration.
 
 ## Users & scenarios
@@ -78,8 +78,9 @@ flowchart TD
 | R7 | A failed consent call changes nothing: statuses and IDs stay as they were, the user sees an error and can retry | Must | Save during a simulated failure: statuses, IDs and monitoring blocks unchanged, an error is shown, the next "Save" works |
 | R8 | Every consumer of identity receives all seven identity fields at start and after every change, without a reload; nothing is delivered when no field changed | Must | Monitoring update times change after start and after a save that changed something; a save that changes nothing (Accepted → Accepted for both) leaves them as they were |
 | R9 | Three consumers record what they receive: all three record both tracking IDs and `temporaryId`; with `consentRequired = false` also `deviceId`; with `true` both consent statuses instead and never `deviceId`. Request headers also carry `consentRequired` and drop any header whose value is `null`; the analytics collector and the game config keep `null` as is | Must | With `consentRequired = true`: no `deviceId` in any monitoring block; the headers block has no header for a `null` ID; the analytics and game-config blocks show `null` |
-| R10 | Debug monitoring: three blocks next to the settings block, one per consumer, showing its current recorded state and the time of the last update | Must | After each change the three blocks show the new fields and a new time immediately, without a reload |
-| R11 | The app works without the real backend: the simulated config and consent methods respond with a delay, sometimes fail, and remember the user's choice between reloads | Must | Reload after accepting: both statuses Accepted with the same IDs and no initial block; a save fails now and then |
+| R10 | Debug monitoring: a config block at the top of the page showing the seven identity fields the app currently holds, and three blocks next to the settings block, one per consumer, showing its current recorded state and the time of the last update | Must | After start the config block shows all seven fields; after each change the config block and the three consumer blocks show the new fields (and a new time) immediately, without a reload |
+| R12 | Debug start: the page opens with a start panel holding a `consentRequired` switch and a "Start" button; the config is loaded only when "Start" is pressed, with the switch's value; pressing it again restarts with the current value | Must | Open the page: no config, consent or monitoring blocks until "Start"; start with the switch off: no consent blocks; press "Start" again with it on: the settings block appears without a reload |
+| R11 | The app works without the real backend: the simulated config and consent methods respond with a delay and remember the user's choice between reloads; the consent method sometimes fails, the config method doesn't fail for now | Must | Reload after accepting: both statuses Accepted with the same IDs and no initial block; a save fails now and then, a start never does |
 
 ## Success metrics
 
@@ -101,4 +102,4 @@ flowchart TD
 - [ ] **Q4.** Final layout and copy of the consent and monitoring blocks, and the UI language: the ticket quotes the buttons in Russian, the docs use provisional English text. — design
 - [ ] **Q5.** What drives the consent requirement (law, platform policy, partner), and which users does it affect? — product
 - [ ] **Q6.** Which success metric, target and measurement source apply? The app has no analytics events. — product
-- [ ] **Q7.** When and under which ticket are the monitoring blocks removed? — product
+- [ ] **Q7.** When and under which ticket are the monitoring blocks and the start panel removed? — product

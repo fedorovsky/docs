@@ -13,7 +13,7 @@ export interface FakeIdentityApiOptions {
   consentRequired: boolean;
   /** [min, max] in milliseconds. */
   delayMs?: [number, number];
-  /** Probability in [0, 1] that a call fails before touching storage. */
+  /** Probability in [0, 1] that updateConsent fails before touching storage. getConfig never fails for now. */
   errorRate?: number;
   random?: () => number;
   storage?: StorageLike | null;
@@ -92,16 +92,16 @@ export function createFakeIdentityApi(options: FakeIdentityApiOptions): Identity
     }
   }
 
-  async function simulateBackend(): Promise<void> {
+  async function simulateBackend(mayFail: boolean): Promise<void> {
     const [min, max] = delayMs;
     const wait = min + (max - min) * random();
     if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
-    if (random() < errorRate) throw new Error('Fake backend error');
+    if (mayFail && random() < errorRate) throw new Error('Fake backend error');
   }
 
   return {
     async getConfig() {
-      await simulateBackend();
+      await simulateBackend(false);
       let choice = read();
       if (!consentRequired) {
         choice = {
@@ -121,7 +121,7 @@ export function createFakeIdentityApi(options: FakeIdentityApiOptions): Identity
     },
 
     async updateConsent(request: ConsentRequest): Promise<ConsentResponse> {
-      await simulateBackend();
+      await simulateBackend(true);
       const stored = read();
       const next = (requested: ConsentStatus, storedStatus: ConsentStatus, storedId: string | null): string | null => {
         if (requested !== ConsentStatus.Accepted) return null;

@@ -73,6 +73,12 @@ Delivers the identity flow of the [Spec](./spec.md): scaffold, fake API, observe
   - Change: run the PRD acceptance criteria of R1–R11 by hand, including a failed save, a revoke-and-accept cycle and a reload
   - Done when: every criterion passes and the monitoring times change only when a field changed
   - Depends on: T8
+- [x] **T13. Replace the URL switch with a manual start panel**
+  - Covers: R12
+  - Files: `src/ui/StartPanel.tsx`, `src/App.tsx`, `src/App.test.tsx`, `src/main.tsx`
+  - Change: the start panel with the `consentRequired` switch and "Start"; `App` creates the fake API and service per "Start" (Spec *Components & changes*)
+  - Done when: `App` tests show only the panel before "Start", both modes, a restart in the other mode and a failed start with "Retry"; in the browser the mode switches without a reload
+  - Depends on: T12
 - [ ] **T10. Apply the final design and copy**
   - Covers: R3, R4, R10
   - Files: `src/ui/ConsentBlock.tsx`, `src/ui/MonitoringBlock.tsx`, `src/App.tsx`
@@ -87,3 +93,15 @@ Delivers the identity flow of the [Spec](./spec.md): scaffold, fake API, observe
   - Done when: the deployed app passes the T9 walkthrough in both modes
   - Depends on: T10
   - Blocked by: Spec Q2
+- [x] **T12. Add the config block**
+  - Covers: R10
+  - Files: `src/ui/ConfigBlock.tsx`, `src/ui/ConfigBlock.test.tsx`, `src/App.tsx`, `src/App.test.tsx`
+  - Change: a block at the top of the page with the observer's current seven fields as JSON (Spec *Components & changes*)
+  - Done when: tests show all seven fields after start and the new values after a save; the block is visible in the browser above the consent blocks
+  - Depends on: T8
+- [x] **T13. Replace the URL switch with a manual start panel**
+  - Covers: R12
+  - Files: `src/ui/StartPanel.tsx`, `src/App.tsx`, `src/App.test.tsx`, `src/main.tsx`
+  - Change: the start panel with the `consentRequired` switch and "Start"; `App` creates the fake API and service per "Start" (Spec *Components & changes*)
+  - Done when: `App` tests show only the panel before "Start", both modes, a restart in the other mode and a failed start with "Retry"; in the browser the mode switches without a reload
+  - Depends on: T12
