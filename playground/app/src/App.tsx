@@ -71,10 +71,19 @@ export function App({ observer, recorders, createBridge }: AppProps) {
           )}
         </div>
         {fields !== null && service !== null && (
-          <section className="monitoring-row" aria-label="Monitoring">
-            {recorders.map((recorder) => (
-              <MonitoringBlock key={recorder.name} recorder={recorder} />
-            ))}
+          <section className="block subscribers" aria-label="Subscribers">
+            <div className="head">
+              <h2>Subscribers</h2>
+            </div>
+            <p className="muted">
+              These are the identity observer's subscribers. Each block shows what its subscriber last received: the request
+              headers, the analytics collector and the game config.
+            </p>
+            <div className="monitoring-row">
+              {recorders.map((recorder) => (
+                <MonitoringBlock key={recorder.name} recorder={recorder} />
+              ))}
+            </div>
           </section>
         )}
       </div>

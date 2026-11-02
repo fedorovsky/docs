@@ -31,6 +31,7 @@ h3 { font-size: 0.95rem; margin: 0; }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
 .block label { display: inline-flex; align-items: center; gap: 6px; margin: 0; }
 .actions { display: flex; gap: 6px; margin-left: auto; }
+.subscribers > .muted { margin-bottom: 8px; }
 .monitoring-row { display: flex; flex-direction: column; gap: 10px; }
 .monitoring { margin-bottom: 0; }
 .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }

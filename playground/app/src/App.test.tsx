@@ -65,6 +65,11 @@ test('Start with consentRequired = true and NotDecided: config, both blocks and 
   expect(config).toHaveTextContent('"deviceId": "device-0001"');
   expect(config).toHaveTextContent('"consentRequired": true');
   expect(config.compareDocumentPosition(screen.getByRole('heading', { name: 'Tracking consent' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  const subscribers = screen.getByRole('region', { name: 'Subscribers' });
+  expect(subscribers).toHaveTextContent("identity observer's subscribers");
+  expect(subscribers).toContainElement(screen.getByRole('region', { name: 'Request headers' }));
+  expect(subscribers).toContainElement(screen.getByRole('region', { name: 'Analytics collector' }));
+  expect(subscribers).toContainElement(screen.getByRole('region', { name: 'Game config' }));
   expect(screen.getByRole('region', { name: 'Request headers' })).toHaveTextContent('"X-Consent-Required": "true"');
   expect(screen.getByRole('region', { name: 'Analytics collector' })).toHaveTextContent('"marketingTrackingId": null');
   expect(screen.getByRole('region', { name: 'Game config' })).not.toHaveTextContent('deviceId');

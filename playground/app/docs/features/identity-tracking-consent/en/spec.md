@@ -91,7 +91,7 @@ Header names (Spec Q3): `X-Marketing-Tracking-Id`, `X-Analytics-Tracking-Id`, `X
 - A toggle is on for `Accepted` and off for `Declined`; `NotDecided` shows as off (PRD Q2).
 - "Save" sends `{ marketing: on ? Accepted : Declined, analytics: … }`; "Accept all" sends both as `Accepted` regardless of the toggles. Both blocks read the statuses from the observer, so a save in one updates the other. After a successful save the toggles are set from the request that was sent, so "Accept all" or a save after a failed one leaves them in step with a status that did not change.
 - While a call is in flight both buttons are disabled. Error handling is not required for now (PRD Q3); what is built stays as a placeholder: on failure the block shows "Could not save your choice. Try again." under the buttons and keeps the toggles as the user left them, and a failed `start()` shows "Could not load the config." with a "Retry" button that calls `start()` again.
-- No mockups or localisation for now (PRD Q4); the English copy ships as is: block titles "Tracking consent" and "Tracking settings", toggle labels "Marketing" and "Analytics", buttons "Save" and "Accept all", monitoring titles "Config", "Request headers", "Analytics collector" and "Game config".
+- No mockups or localisation for now (PRD Q4); the English copy ships as is: block titles "Tracking consent" and "Tracking settings", toggle labels "Marketing" and "Analytics", buttons "Save" and "Accept all", monitoring titles "Config", "Request headers", "Analytics collector" and "Game config", and the "Subscribers" block that groups the last three with a line saying they are the identity observer's subscribers.
 
 ### Data model
 
