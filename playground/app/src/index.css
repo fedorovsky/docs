@@ -23,6 +23,6 @@ h3 { font-size: 1rem; margin: 0 0 4px; }
 .actions { display: flex; gap: 8px; margin-top: 10px; }
 .monitoring-row { display: flex; flex-direction: column; gap: 16px; }
 .monitoring { margin-bottom: 0; }
-.monitoring pre { font-size: 0.8rem; overflow-x: auto; margin: 0; }
+.block pre { font-size: 0.8rem; overflow-x: auto; margin: 0; }
 .muted { opacity: 0.7; font-size: 0.9rem; margin: 4px 0; }
 .error { color: #c0392b; margin: 8px 0; }
