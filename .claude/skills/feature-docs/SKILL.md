@@ -51,6 +51,8 @@ The project is the codebase the feature belongs to; in a monorepo, the package o
 
 Sources, in order: the conversation, tickets and notes, existing docs, the code. Read the relevant code before asking anything: a permission the backend doesn't check, or a search that can't do what the ticket assumes, is a product question that surfaces only there. A Spec is grounded in real modules, files, tables and endpoints.
 
+Check the sources for contradictions: two statements that can't both hold, or a value stated differently in two places. Each one becomes a PRD open question that quotes both statements; the Spec picks one reading as an assumption citing that question (see *Spec*). Never resolve a contradiction silently.
+
 Ask once, before drafting: one batch, most important first, only questions whose answers change the content. Typical PRD gaps: who has the problem, the evidence, success in numbers, what is out of scope.
 
 Unanswered questions never block the draft. Write the docs and record each one under *Open questions* with who should answer it. Never substitute a plausible value for a missing metric, baseline, date or owner: a visible gap gets resolved, a fabricated number gets shipped. Keep dates as the source states them ("next quarter") unless the conversion is unambiguous.
@@ -61,7 +63,7 @@ Unanswered questions never block the draft. Write the docs and record each one u
 - Drop *(optional)* sections that don't apply. A required section with nothing to say gets one line ("No new dependencies.") so reviewers know it was considered.
 - Remove all scaffolding: angle-bracket placeholders, guidance text, *(optional)* markers, frontmatter comments.
 - Size to the feature: a small feature's PRD fits one screen. Tables and short bullets over prose.
-- English first, then the Russian mirror from the Russian template. Never draft the two independently.
+- English first, in English whatever language the sources are in; then the Russian mirror from the Russian template. Never draft the two independently.
 - Links: `prd:` / `spec:` point to siblings in the same language folder (`./prd.md`); `mirror:` points to the twin (`../ru/prd.md` from `en/`).
 
 ### 5. Check and hand over
@@ -91,23 +93,24 @@ The hand-over message names the files, the open questions, every change made to 
 ### Spec
 
 - *Context & current state* describes the real code, with paths.
-- *Requirements coverage* lists every PRD requirement. A row the design meets only partly, or not at all, starts with **Partial:** or **Not covered:**, says what's missing, and has a matching open question.
-- Where the PRD is silent (a limit, a default, who sees what): take the most conservative option, write it in the section it affects as `Assumption (PRD Q4): …`, and add that question to the PRD. The Spec's own open questions are technical, plus questions about the Spec or `tasks.md` themselves; `tasks.md` has no open-questions section.
+- *Requirements coverage* lists every PRD requirement. A row the design meets only partly, or not at all, starts with **Partial:** or **Not covered:** (Russian: **Частично:** / **Не покрыто:**), says what's missing, and has a matching open question.
+- Where the PRD is silent or contradicts itself (a limit, a default, who sees what): take the most conservative option that breaks no other requirement, write it in the section it affects as `Assumption (PRD Q4): …` (Russian: `Допущение (PRD Q4): …`), and add that question to the PRD. If every option breaks some requirement, the requirement it breaks is marked **Partial:** in *Requirements coverage*, citing the same question. The Spec's own open questions are technical, plus questions about the Spec or `tasks.md` themselves; `tasks.md` has no open-questions section.
 - *Alternatives & decisions* records each non-obvious choice: options, choice, reason. A decision spanning several features may deserve an ADR; suggest it, don't create it.
 - Edge cases, testing plan, and rollout with rollback are always present.
+- The release is the rollout: order it so it is safe (migrations backward compatible and ahead of the code), and roll back by redeploying the previous version.
 
 ### Tasks
 
 One checkbox per task, fields underneath, in execution order:
 
-- **Covers**: requirement IDs, or one label: `setup` (config, tests, schema, flags), `verify` (checks on a real environment), `rollout`. Every requirement the Spec covers appears in at least one task.
+- **Covers**: requirement IDs, or one label: `setup` (scaffolding, config, tests, schema), `verify` (checks on a real environment), `rollout`. Every requirement the Spec covers appears in at least one task.
 - **Files**: real paths from the Spec and the code; for things outside the repo, the place.
 - **Change**: at most two sentences, citing the Spec section. Longer, or more than about five files, means the task is too big: split it.
 - **Done when**: a check anyone can run. Tests belong to the task, not to a final "write tests" task; for `setup`, a passing build or test run is enough.
 - **Depends on**: earlier task IDs.
 - **Blocked by**: the open question that must be answered first. Every blocker, including mockups, another team or an access request, is tracked as an open question (PRD for product and design, Spec for technical). An assumption the Spec already makes doesn't block; block only when no sensible assumption exists or a different answer would mean redoing the task.
 
-Each task is reviewable alone, about one small PR, and leaves the app building and working: gate new behaviour behind the Spec's feature flag early, roll out last. Missing mockups or final UI text don't block UI tasks: build with provisional text behind the flag and add one late task for the final design, blocked by the design question.
+Each task is reviewable alone, about one small PR, and leaves the app building and working, with nothing half-built reachable: build the internals first and add the entry point (route, button, menu item) in the last task the flow needs. Missing mockups or final UI text don't block UI tasks: build with provisional text and add one late task for the final design, blocked by the design question.
 
 Tasks add nothing the Spec doesn't describe. A gap is fixed in the Spec first, then the task is added. Any fix to the PRD or Spec while writing tasks, including convention breaks noticed on the way, is an *Update* (both languages, `updated`, mirror check) and is listed in the hand-over message.
 
@@ -127,16 +130,16 @@ When all tasks are ticked, propose `status: shipped` for all three documents.
 
 ## Bilingual mirror
 
-English is primary (`en/`, `lang: en`); Russian mirrors it (`ru/`, `lang: ru`). A reader of either version learns exactly the same things:
+English is the main document (`en/`, `lang: en`). Russian (`ru/`, `lang: ru`) is a mirror for convenient reading: it never adds, decides or drops anything, and when the two disagree in meaning, English is right unless the Russian side holds a newer edit (see *Out-of-sync pair* below). A reader of either version learns exactly the same things:
 
 - **Structure**: same headings in the same order, using the Russian template's headings verbatim; same table rows, list items and checkbox states.
 - **Facts**: every number, date, name, status, priority and decision on both sides. No clarification, example or caveat on one side only.
-- **Untranslated**: IDs, priorities and task labels; anything in backticks; fenced code blocks except Mermaid, byte-identical with comments; frontmatter keys and values except `title`; people's names; UI text (screen names, labels, messages, empty states), quoted as the product shows or will show it.
-- **Diagrams**: identical node IDs, participants and arrows; only human-readable labels translated.
+- **Untranslated**: IDs, priorities and task labels; anything in backticks; fenced code blocks except Mermaid, byte-identical with comments; frontmatter keys and values except `title`; people's names; UI text (screen names, labels, messages, empty states), quoted as the product shows or will show it. When the UI language isn't settled, UI text is English in both versions, including labels a source quotes in another language: «Сохранить» becomes "Save", and the final copy is a design question.
+- **Diagrams**: identical node IDs, participants and arrows. A label that contains code (a call, identifier, field or value, such as `init(fields)`) stays byte-identical; only labels in plain words are translated.
 - **Links**: identical, relative to the language folder.
 - **Frontmatter**: identical except `title`, `lang`, `mirror`; `status` and `updated` change together.
 
-Translate for meaning. The Russian reads as written by a Russian-speaking engineer; terms the team uses in English (feature flag, rollout, endpoint) may stay English.
+Translate for meaning. The Russian reads as written by a Russian-speaking engineer; terms the team uses in English (rollout, endpoint) may stay English.
 
 Out-of-sync pair: `git diff` / `git log` both files and port the change to the other side. Conflicting changes on both sides: show the user and ask which is right. Never regenerate one side from the other; that discards someone's edit.
 
@@ -163,10 +166,11 @@ Add one when prose can't explain it quickly: three or more parties, or non-trivi
 - [ ] No implementation details.
 - [ ] Every metric has a source and a target, or a question for the unknown.
 - [ ] Product questions the Spec depends on are here.
+- [ ] Every contradiction in the sources is an open question quoting both statements.
 
 **Spec**
 - [ ] Every requirement is in *Requirements coverage*; gaps marked **Partial:** / **Not covered:**.
-- [ ] Every assumption cites a PRD question.
+- [ ] Every assumption cites a PRD question and breaks no requirement, or the one it breaks is marked **Partial:**.
 - [ ] *Context & current state* matches the code, with paths.
 - [ ] Each non-obvious decision lists an alternative.
 - [ ] Edge cases, testing plan, rollout and rollback present.
@@ -175,6 +179,7 @@ Add one when prose can't explain it quickly: three or more parties, or non-trivi
 **Tasks**
 - [ ] Every covered requirement appears in some *Covers*; labels are `setup` / `verify` / `rollout` only.
 - [ ] Real *Files*, *Change* ≤ 2 sentences, runnable *Done when*; nothing beyond the Spec.
+- [ ] The entry point comes in the last task its flow needs; nothing half-built is reachable.
 - [ ] *Depends on* points backwards; every *Blocked by* names a question.
 - [ ] Changes to the PRD or Spec are listed in the hand-over.
 

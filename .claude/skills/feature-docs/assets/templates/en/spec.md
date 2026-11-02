@@ -69,7 +69,7 @@ links: []                # tickets, PRs, designs, related docs
 
 ## Rollout & rollback
 
-<Feature flags, phased rollout, migrations order, backward compatibility, and how to roll back safely.>
+<Release order (migrations before code), backward compatibility, and how to roll back safely.>
 
 ## Observability *(optional)*
 

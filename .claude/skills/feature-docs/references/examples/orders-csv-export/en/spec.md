@@ -87,7 +87,7 @@ New table `order_exports`: `id`, `merchant_id`, `filters` (jsonb), `status` (`pe
 
 ## Rollout & rollback
 
-Behind flag `orders_csv_export`: internal stores → 10% of merchants → 100% over two weeks. Rollback: disable the flag; the table and worker are inert without it.
+The release is the rollout. The `order_exports` migration only adds a table, so it runs before the code deploy. The Export button is the only entry point and is added last, after the load test, so nothing is reachable before the backend is proven. Rollback: redeploy the previous version; the table stays, unused.
 
 ## Observability
 
