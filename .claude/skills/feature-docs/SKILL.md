@@ -27,7 +27,7 @@ Bundled files, relative to this skill's directory:
 
 - `assets/templates/{en,ru}/{prd,spec,tasks}.md`: the document structure.
 - `references/examples/orders-csv-export/`: a worked example. Read it once for depth and tone.
-- `scripts/check_mirror.py`: structural EN/RU comparison. Run it (Python 3, no packages); don't read it.
+- `scripts/check_mirror.py`: structural EN/RU comparison plus per-file checks: every ID defined once, tasks in execution order, every blocker naming a question. Run it (Python 3, no packages); don't read it.
 
 ## Workflow
 
@@ -44,7 +44,7 @@ The project is the codebase the feature belongs to; in a monorepo, the package o
 | Several at once | PRD, then Spec, then Tasks, each from the previous one, in one pass. No review stop between them unless asked. |
 | Tasks | Read the Spec and the PRD, then write `tasks.md` (see *Tasks*). No Spec means write the Spec first. A `draft` Spec means the tasks may change with it: say so. |
 | Implement | See *Working through tasks*. |
-| Update | Run the mirror check first and resolve an out-of-sync pair before editing (see *Bilingual mirror*). Edit both languages in one pass, bump `updated`, keep IDs stable. |
+| Update | Run the mirror check first and resolve an out-of-sync pair before editing (see *Bilingual mirror*). Edit both languages in one pass, bump `updated`, keep IDs stable. A Spec change pulls `tasks.md` along (see *Tasks*). |
 | Review | Report against the checklist, mirror problems included. Don't rewrite unless asked. |
 
 ### 3. Gather facts; invent nothing
@@ -84,9 +84,11 @@ The hand-over message names the files, the open questions, every change made to 
 
 `R1…` requirements, `Q1…` open questions (numbered per document), `T1…` tasks. IDs are permanent: never renumber. A dropped item stays ~~struck through~~ with a reason; a new one takes the next free number. Refer to questions by document and number, "PRD Q3" / "Spec Q1", identically in Russian ("см. PRD Q3"). An answered question is ticked, the answer written after it, and dependent text updated.
 
+A new item goes where it belongs in the order (a task where it runs, a requirement next to its neighbours), not at the end, so IDs may run out of file order. After inserting one, search the file for its ID: an edit that lands twice is how a duplicate appears, and the check script fails on it.
+
 ### PRD
 
-- Requirements table: ID, requirement, priority (MoSCoW: **Must** / **Should** / **Could**), at least one acceptance criterion a tester can check. Criteria may name routes, permissions and analytics events; those are product facts, not implementation details.
+- Requirements table: ID, requirement, priority (MoSCoW: **Must** / **Should** / **Could**), at least one acceptance criterion a tester can check. Criteria may name routes, permissions and analytics events; those are product facts, not implementation details. Stubs, mocks, test names and module names are implementation details: when a criterion can only be verified in automated tests, it says so and stops there.
 - Each success metric names a measurement source (an existing analytics event or dashboard is fine) and a target; an unknown baseline or target points to a question ("unknown — see Q2").
 - Product decisions the Spec needs but the PRD doesn't make belong in the PRD's open questions.
 
@@ -114,6 +116,8 @@ Each task is reviewable alone, about one small PR, and leaves the app building a
 
 Tasks add nothing the Spec doesn't describe. A gap is fixed in the Spec first, then the task is added. Any fix to the PRD or Spec while writing tasks, including convention breaks noticed on the way, is an *Update* (both languages, `updated`, mirror check) and is listed in the hand-over message.
 
+Tasks follow the Spec after they are done as well. A Spec change is followed by a pass over `tasks.md`: every task, ticked or not, whose *Files*, *Change* or *Done when* cite what changed is brought in line in the same update; a ticked task whose work a later task replaced stays ticked and names it ("replaced by T13"). A task list that describes a Spec that no longer exists is a review finding.
+
 ### Working through tasks
 
 1. Take the first unchecked task whose dependencies are done and which isn't blocked. Name it.
@@ -122,7 +126,7 @@ Tasks add nothing the Spec doesn't describe. A gap is fixed in the Spec first, t
 4. If the implementation diverged from the Spec, update the Spec in the same step: the docs describe what was built.
 5. Stop after each task unless asked to continue.
 
-When all tasks are ticked, propose `status: shipped` for all three documents.
+When all tasks are ticked, re-read the Spec against the code: *Context & current state*, the diagrams and the signatures in *API / interfaces* describe the code as it is now, not the state before the feature. Then propose `status: shipped` for all three documents.
 
 ### Status
 
@@ -171,7 +175,7 @@ Add one when prose can't explain it quickly: three or more parties, or non-trivi
 **Spec**
 - [ ] Every requirement is in *Requirements coverage*; gaps marked **Partial:** / **Not covered:**.
 - [ ] Every assumption cites a PRD question and breaks no requirement, or the one it breaks is marked **Partial:**.
-- [ ] *Context & current state* matches the code, with paths.
+- [ ] *Context & current state* matches the code, with paths; once the tasks are done, so do the diagrams and the signatures.
 - [ ] Each non-obvious decision lists an alternative.
 - [ ] Edge cases, testing plan, rollout and rollback present.
 - [ ] No goal or requirement redefined.
@@ -180,7 +184,8 @@ Add one when prose can't explain it quickly: three or more parties, or non-trivi
 - [ ] Every covered requirement appears in some *Covers*; labels are `setup` / `verify` / `rollout` only.
 - [ ] Real *Files*, *Change* ≤ 2 sentences, runnable *Done when*; nothing beyond the Spec.
 - [ ] The entry point comes in the last task its flow needs; nothing half-built is reachable.
-- [ ] *Depends on* points backwards; every *Blocked by* names a question.
+- [ ] Every task ID is defined once and tasks are in execution order: *Depends on* points to a task above; every *Blocked by* names a question.
+- [ ] No task describes something the Spec no longer says; a replaced task names its replacement.
 - [ ] Changes to the PRD or Spec are listed in the hand-over.
 
 **All**

@@ -17,11 +17,11 @@ links: [TRACK-12]
 
 ## Кратко
 
-Сервис identity загружает стартовый конфиг через нативный бридж (`IdentityBridge`), кладёт семь полей identity в обсервер identity и сохраняет согласие через тот же бридж; обсервер вызывает трёх запоминающих подписчиков (хедеры запросов, коллектор аналитики, гейм-конфиг) при старте и при каждом изменении поля. Пока нативный бридж не готов, `IdentityBridge` — фейк, который хранит выбор в `localStorage` и отвечает с задержкой. UI — одна страница с двумя блоками согласия и тремя блоками мониторинга. Зачем это нужно, описано в [PRD](./prd.md).
+Сервис identity загружает стартовый конфиг через нативный бридж (`IdentityBridge`), кладёт семь полей identity в обсервер identity и сохраняет согласие через тот же бридж; обсервер вызывает трёх запоминающих подписчиков (хедеры запросов, коллектор аналитики, гейм-конфиг) при старте и при каждом изменении поля. Пока нативный бридж не готов, `IdentityBridge` — фейк, который хранит выбор в `localStorage` и отвечает с задержкой. UI — одна страница: отладочная панель старта, блок конфига, два блока согласия и три блока мониторинга. Зачем это нужно, описано в [PRD](./prd.md).
 
 ## Контекст и текущее состояние
 
-- Проект `playground/app/` пуст: нет `package.json`, нет исходников. README playground описывает его как фронтенд на React + TypeScript, поэтому первая задача создаёт каркас приложения Vite + React + TypeScript с Vitest; все пути ниже новые и указаны относительно `playground/app/`.
+- Проект `playground/app/` — приложение Vite + React + TypeScript с Vitest, каркас которого создан для этой фичи (T1): до неё папка была пуста, а README playground описывал её как фронтенд на React + TypeScript. Все пути ниже указаны относительно `playground/app/`; каждый модуль из раздела «Компоненты и изменения» существует, тесты лежат рядом с ним.
 - Нативного бриджа пока нет: методы конфига и согласия хост-приложения в работе, согласованный контракт к тикету не приложен (Spec Q1); фейк реализует имена полей из TRACK-12 и форматы из раздела «API / интерфейсы».
 - В приложении нет HTTP-клиента, коллектора аналитики и гейм-конфига, поэтому три подписчика запоминают, что получили, вместо вызова реальных систем.
 
@@ -32,19 +32,22 @@ links: [TRACK-12]
 ```mermaid
 sequenceDiagram
   participant Main as main.tsx
+  participant App as App.tsx
   participant Service as identityService
   participant Bridge as fakeIdentityBridge
   participant Storage as localStorage
   participant Observer as identityObserver
   participant Subs as subscribers
   Main->>Observer: subscribe(requestHeaders, analyticsCollector, gameConfig)
-  Main->>Service: start()
+  Note over App: пользователь нажимает Start
+  App->>Service: start()
   Service->>Bridge: getConfig()
   Bridge->>Storage: читает сохранённый выбор
   Bridge-->>Service: IdentityFields
   Service->>Observer: set(fields)
   Observer->>Subs: вызывает каждого со всеми полями
-  Note over Service: пользователь нажимает Save или Accept all
+  Note over App: пользователь нажимает Save или Accept all
+  App->>Service: saveConsent(request)
   Service->>Bridge: updateConsent(request)
   Bridge->>Storage: пишет новый выбор
   Bridge-->>Service: ConsentResponse
@@ -56,7 +59,7 @@ sequenceDiagram
 
 - `src/identity/types.ts` — новый: `ConsentStatus` (`Declined = 0`, `Accepted = 1`, `NotDecided = 2`), `IdentityFields` (семь полей конфига), `ConsentRequest`, `ConsentResponse`.
 - `src/identity/identityObserver.ts` — новый: `createIdentityObserver()` с `set(fields)`, `get()`, `subscribe(fn)`. `set` сохраняет поля и вызывает каждого подписчика, если это первый set или любое из семи полей отличается (строгое равенство по полю); иначе ничего не делает. Подписчик, добавленный после первого `set`, сразу вызывается с текущими полями. `subscribe` и `get` также обслуживают React через `useSyncExternalStore`.
-- `src/identity/useIdentity.ts` — новый: `useIdentity(observer)`, хук `useSyncExternalStore`, которым пользуются оба блока согласия.
+- `src/identity/useIdentity.ts` — новый: `useIdentity(observer)`, хук `useSyncExternalStore`, которым пользуются блоки согласия, блок конфига и `App`.
 - `src/identity/identityService.ts` — новый: `createIdentityService(bridge, observer)` со `start()` (вызывает `getConfig`, затем `observer.set`) и `saveConsent(request)` (вызывает `updateConsent`; при успехе сливает два статуса из запроса и два ID из ответа в текущие поля и вызывает `observer.set`; при ошибке пробрасывает её и ничего не трогает).
 - `src/bridge/identityBridge.ts` — новый: интерфейс `IdentityBridge`, контракт нативного бриджа (конфиг и согласие); адаптер настоящего бриджа реализует его позже.
 - `src/bridge/fakeIdentityBridge.ts` — новый: `createFakeIdentityBridge(options)`; поведение в разделах «Модель данных» и «API / интерфейсы». Он никогда не падает: пути ошибок проверяются стабами в тестах.
@@ -130,10 +133,10 @@ interface ConsentRequest { marketing: ConsentStatus; analytics: ConsentStatus } 
 interface ConsentResponse { marketingTrackingId: string | null; analyticsTrackingId: string | null }
 ```
 
-Поведение фейка, `createFakeIdentityBridge({ consentRequired, forgetChoice = false, delayMs = [300, 1000], random = Math.random, storage = localStorage })`:
+Поведение фейка, `createFakeIdentityBridge({ consentRequired, forgetChoice = false, delayMs = [300, 1000], random = Math.random, storage = localStorage, newId = crypto.randomUUID })`:
 
 - `forgetChoice = true` удаляет сохранённый выбор при создании, поэтому следующий `getConfig` ведёт себя как первый старт (PRD R12).
-
+- `storage: null` хранит выбор только в памяти; `newId` выдаёт tracking ID и временные ID (тесты передают счётчик).
 - Каждый вызов ждёт случайную задержку из `delayMs` и никогда не падает (PRD R11).
 - `getConfig` при `consentRequired = true`: статусы и ID из хранилища или `NotDecided` / `null`, если ничего не сохранено.
 - `getConfig` при `consentRequired = false`: оба статуса `Accepted`; ID из хранилища, если есть, иначе выдаются и сохраняются; сохранённые статусы игнорируются.

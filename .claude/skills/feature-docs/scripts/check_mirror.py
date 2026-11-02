@@ -14,6 +14,10 @@ folders are ignored. Exits with 1 if any mirror is missing or any pair differs.
 Only structure is compared — headings, tables, lists, checkboxes, R/T/Q
 IDs, inline code, links, fenced blocks and frontmatter — since prose is
 expected to differ by language. Meaning still has to be checked by reading.
+
+Each file is also checked on its own: every R/T/Q ID is defined once, a task's
+"Depends on" names only tasks above it (tasks are in execution order) and a
+"Blocked by" names a question as "PRD Qn" / "Spec Qn".
 """
 
 import os
@@ -36,6 +40,12 @@ TABLE_SEP_RE = re.compile(r"^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$")
 REQ_ID_RE = re.compile(r"\b[RTQ]\d+\b")
 CODE_RE = re.compile(r"(`+)(.+?)\1")
 LINK_RE = re.compile(r"\]\(([^)\s]+)")
+# Where an ID is defined: a task or question header (**T1.** / ~~**T1.**~~) or a requirement row (| R1 |).
+DEF_ID_RE = re.compile(r"^\s*(?:[-*+]\s+(?:\[[ xX]\]\s+)?)?~{0,2}\*\*([RTQ]\d+)\.|^\s*\|\s*([RTQ]\d+)\s*\|")
+TASK_DEF_RE = re.compile(r"^\s*[-*+]\s+\[[ xX]\]\s+~{0,2}\*\*(T\d+)\.")
+DEPENDS_RE = re.compile(r"^\s*[-*+]\s+(?:Depends on|Зависит от):\s*(.*)$")
+BLOCKED_RE = re.compile(r"^\s*[-*+]\s+(?:Blocked by|Заблокировано):\s*(.*)$")
+QUESTION_REF_RE = re.compile(r"\b(?:PRD|Spec) Q\d+\b")
 
 
 def lang_of(path: Path):
@@ -141,9 +151,53 @@ def parse(path: Path):
     }
 
 
+def lint(path: Path):
+    """Per-file checks that need no mirror: unique IDs, task order, blockers."""
+    issues = []
+    lines = path.read_text(encoding="utf-8").splitlines()
+    _, start = parse_frontmatter(lines)
+    seen = Counter()
+    tasks_above = set()
+    task = None  # the task whose fields we are reading
+    in_fence = False
+    for n, line in enumerate(lines[start:], start=start + 1):
+        if FENCE_RE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        m = DEF_ID_RE.match(line)
+        if m:
+            seen[m.group(1) or m.group(2)] += 1
+        m = TASK_DEF_RE.match(line)
+        if m:
+            if task:
+                tasks_above.add(task)
+            task = m.group(1)
+            continue
+        if task is None:
+            continue
+        m = DEPENDS_RE.match(line)
+        if m:
+            for dep in re.findall(r"\bT\d+\b", m.group(1)):
+                if dep == task:
+                    issues.append(f"line {n}: {task} depends on itself")
+                elif dep not in tasks_above:
+                    issues.append(f"line {n}: {task} depends on {dep}, which is not above it (tasks go in execution order)")
+        m = BLOCKED_RE.match(line)
+        if m and not QUESTION_REF_RE.search(m.group(1)):
+            issues.append(f"line {n}: {task} 'Blocked by' must name a question as 'PRD Qn' or 'Spec Qn' (found {m.group(1).strip()!r})")
+    for id_, count in sorted(seen.items()):
+        if count > 1:
+            issues.append(f"ID {id_} is defined {count} times")
+    return issues
+
+
 def compare(en: Path, ru: Path):
     a, b = parse(en), parse(ru)
     issues = []
+    for name, path in (("EN", en), ("RU", ru)):
+        issues.extend(f"{name}: {issue}" for issue in lint(path))
 
     # Frontmatter
     fa, fb = a["frontmatter"], b["frontmatter"]

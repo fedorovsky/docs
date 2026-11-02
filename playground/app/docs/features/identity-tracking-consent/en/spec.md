@@ -17,11 +17,11 @@ links: [TRACK-12]
 
 ## Summary
 
-An identity service loads the startup config through the native bridge (`IdentityBridge`), pushes the seven identity fields into an identity observer and saves consent through the same bridge; the observer calls three recording subscribers (request headers, analytics collector, game config) at start and whenever a field changes. Until the native bridge ships, `IdentityBridge` is a fake that keeps the choice in `localStorage` and answers with a delay. The UI is one page with the two consent blocks and the three monitoring blocks. See the [PRD](./prd.md) for the why.
+An identity service loads the startup config through the native bridge (`IdentityBridge`), pushes the seven identity fields into an identity observer and saves consent through the same bridge; the observer calls three recording subscribers (request headers, analytics collector, game config) at start and whenever a field changes. Until the native bridge ships, `IdentityBridge` is a fake that keeps the choice in `localStorage` and answers with a delay. The UI is one page: a debug start panel, a config block, the two consent blocks and the three monitoring blocks. See the [PRD](./prd.md) for the why.
 
 ## Context & current state
 
-- The project `playground/app/` is empty: no `package.json`, no source. The playground README describes it as a React + TypeScript frontend, so the first task scaffolds a Vite + React + TypeScript app with Vitest; all paths below are new and relative to `playground/app/`.
+- The project `playground/app/` is a Vite + React + TypeScript app with Vitest, scaffolded for this feature (T1): before it the folder was empty, and the playground README described it as a React + TypeScript frontend. All paths below are relative to `playground/app/`; every module in *Components & changes* exists, with its tests next to it.
 - There is no native bridge yet: the config and consent methods of the host app are in progress and the agreed contract isn't attached to the ticket (Spec Q1); the fake implements the field names of TRACK-12 and the shapes in *API / interfaces*.
 - There is no HTTP client, analytics collector or game config in the app, so the three subscribers record what they receive instead of calling real systems.
 
@@ -32,19 +32,22 @@ An identity service loads the startup config through the native bridge (`Identit
 ```mermaid
 sequenceDiagram
   participant Main as main.tsx
+  participant App as App.tsx
   participant Service as identityService
   participant Bridge as fakeIdentityBridge
   participant Storage as localStorage
   participant Observer as identityObserver
   participant Subs as subscribers
   Main->>Observer: subscribe(requestHeaders, analyticsCollector, gameConfig)
-  Main->>Service: start()
+  Note over App: user presses Start
+  App->>Service: start()
   Service->>Bridge: getConfig()
   Bridge->>Storage: read saved choice
   Bridge-->>Service: IdentityFields
   Service->>Observer: set(fields)
   Observer->>Subs: call each with all fields
-  Note over Service: user presses Save or Accept all
+  Note over App: user presses Save or Accept all
+  App->>Service: saveConsent(request)
   Service->>Bridge: updateConsent(request)
   Bridge->>Storage: write new choice
   Bridge-->>Service: ConsentResponse
@@ -56,7 +59,7 @@ sequenceDiagram
 
 - `src/identity/types.ts` — new: `ConsentStatus` (`Declined = 0`, `Accepted = 1`, `NotDecided = 2`), `IdentityFields` (the seven config fields), `ConsentRequest`, `ConsentResponse`.
 - `src/identity/identityObserver.ts` — new: `createIdentityObserver()` with `set(fields)`, `get()`, `subscribe(fn)`. `set` stores the fields and calls every subscriber when it is the first set or any of the seven fields differs (strict equality per field); otherwise it does nothing. A subscriber added after the first `set` is called at once with the current fields. `subscribe` and `get` also serve React through `useSyncExternalStore`.
-- `src/identity/useIdentity.ts` — new: `useIdentity(observer)`, the `useSyncExternalStore` hook both consent blocks use.
+- `src/identity/useIdentity.ts` — new: `useIdentity(observer)`, the `useSyncExternalStore` hook the consent blocks, the config block and `App` use.
 - `src/identity/identityService.ts` — new: `createIdentityService(bridge, observer)` with `start()` (calls `getConfig`, then `observer.set`) and `saveConsent(request)` (calls `updateConsent`; on success merges the two statuses from the request and the two IDs from the response into the current fields and calls `observer.set`; on failure rethrows and touches nothing).
 - `src/bridge/identityBridge.ts` — new: the `IdentityBridge` interface, the native bridge contract (config and consent); the real bridge adapter will implement it later.
 - `src/bridge/fakeIdentityBridge.ts` — new: `createFakeIdentityBridge(options)`; behaviour in *Data model* and *API / interfaces*. It never fails: the error paths are exercised with stubs in tests.
@@ -130,10 +133,10 @@ interface ConsentRequest { marketing: ConsentStatus; analytics: ConsentStatus } 
 interface ConsentResponse { marketingTrackingId: string | null; analyticsTrackingId: string | null }
 ```
 
-Fake behaviour, `createFakeIdentityBridge({ consentRequired, forgetChoice = false, delayMs = [300, 1000], random = Math.random, storage = localStorage })`:
+Fake behaviour, `createFakeIdentityBridge({ consentRequired, forgetChoice = false, delayMs = [300, 1000], random = Math.random, storage = localStorage, newId = crypto.randomUUID })`:
 
 - `forgetChoice = true` removes the stored choice on creation, so the next `getConfig` behaves as a first start (PRD R12).
-
+- `storage: null` keeps the choice in memory only; `newId` issues the tracking and temporary IDs (tests pass a counter).
 - Every call waits a random `delayMs` and never fails (PRD R11).
 - `getConfig` with `consentRequired = true`: statuses and IDs from storage, or `NotDecided` / `null` when nothing is stored.
 - `getConfig` with `consentRequired = false`: both statuses `Accepted`; IDs from storage when present, otherwise issued and stored; stored statuses are ignored.
