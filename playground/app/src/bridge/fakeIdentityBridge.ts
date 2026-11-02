@@ -35,13 +35,6 @@ const EMPTY: StoredChoice = {
   analyticsTrackingId: null,
 };
 
-const NOT_REQUIRED: StoredChoice = {
-  marketingConsentStatus: ConsentStatus.Accepted,
-  analyticsConsentStatus: ConsentStatus.Accepted,
-  marketingTrackingId: null,
-  analyticsTrackingId: null,
-};
-
 function isStatus(value: unknown): value is ConsentStatus {
   return value === ConsentStatus.Declined || value === ConsentStatus.Accepted || value === ConsentStatus.NotDecided;
 }
@@ -117,8 +110,8 @@ export function createFakeIdentityBridge(options: FakeIdentityBridgeOptions): Id
   return {
     async getConfig() {
       await simulateDelay();
-      // Without consentRequired no tracking ID is issued and storage is left alone (PRD R2).
-      const choice: StoredChoice = consentRequired ? read() : NOT_REQUIRED;
+      // Without consentRequired nothing is decided: both NotDecided, no tracking IDs, storage left alone (PRD R2).
+      const choice = consentRequired ? read() : EMPTY;
       return {
         ...choice,
         deviceId: DEVICE_ID,

@@ -20,12 +20,7 @@ const undecided: IdentityFields = {
   analyticsConsentStatus: NotDecided,
 };
 
-const accepted: IdentityFields = {
-  ...undecided,
-  consentRequired: false,
-  marketingConsentStatus: Accepted,
-  analyticsConsentStatus: Accepted,
-};
+const notRequired: IdentityFields = { ...undecided, consentRequired: false };
 
 /** A fake-like bridge: the config follows the consentRequired the App asked for. */
 function setup(bridge: Partial<IdentityBridge> = {}) {
@@ -33,7 +28,7 @@ function setup(bridge: Partial<IdentityBridge> = {}) {
   const recorders = [createRequestHeadersSubscriber(), createAnalyticsCollectorSubscriber(), createGameConfigSubscriber()];
   for (const recorder of recorders) observer.subscribe(recorder.handle);
   const createBridge = vi.fn((consentRequired: boolean, _firstStart: boolean): IdentityBridge => ({
-    getConfig: vi.fn().mockResolvedValue(consentRequired ? undecided : { ...accepted, temporaryId: 'tmp-2' }),
+    getConfig: vi.fn().mockResolvedValue(consentRequired ? undecided : { ...notRequired, temporaryId: 'tmp-2' }),
     updateConsent: vi.fn(),
     ...bridge,
   }));

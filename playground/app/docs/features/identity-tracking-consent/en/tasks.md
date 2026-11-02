@@ -97,12 +97,18 @@ Delivers the identity flow of the [Spec](./spec.md): scaffold, fake bridge, obse
   - Change: with `consentRequired = false` the fake `getConfig` returns both IDs `null` and leaves storage alone (Spec *API / interfaces*)
   - Done when: tests show `null` IDs and untouched storage with `consentRequired = false`, a stored choice back on the next `consentRequired = true` start, and `deviceId` without tracking-ID headers in `App`
   - Depends on: T15
+- [x] **T17. Leave both consents NotDecided without consent**
+  - Covers: R2
+  - Files: `src/bridge/fakeIdentityBridge.ts`, `src/bridge/fakeIdentityBridge.test.ts`, `src/App.test.tsx`
+  - Change: with `consentRequired = false` the fake `getConfig` returns both statuses `NotDecided` (Spec *API / interfaces*)
+  - Done when: a fake test shows both statuses `NotDecided` with `consentRequired = false`; the `App` tests pass
+  - Depends on: T16
 - [x] **T9. Walk through the acceptance criteria**
   - Covers: `verify`
   - Files: `playground/app/` in the browser, started from the start panel in both `consentRequired` modes
   - Change: run the PRD acceptance criteria of R1–R12 except R7 by hand, including a revoke-and-accept cycle, a restart with "first start" and a reload (Spec *Testing plan*)
   - Done when: every criterion passes and the monitoring times change only when a field changed
-  - Depends on: T8, T15, T16
+  - Depends on: T8, T15, T16, T17
 - [ ] ~~**T10. Apply the final design and copy**~~ Dropped 2026-11-02: no mockups or localisation for now (PRD Q4)
 - [ ] **T11. Release**
   - Covers: `rollout`

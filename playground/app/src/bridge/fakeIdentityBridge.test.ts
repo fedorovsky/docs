@@ -44,12 +44,12 @@ test('temporaryId is new on every getConfig', async () => {
   expect(first.deviceId).toBe(second.deviceId);
 });
 
-test('consentRequired = false: both Accepted, no tracking IDs, nothing stored', async () => {
+test('consentRequired = false: both NotDecided, no tracking IDs, nothing stored', async () => {
   const storage = memoryStorage();
   const config = await bridge({ consentRequired: false, storage }).getConfig();
   expect(config).toMatchObject({
-    marketingConsentStatus: Accepted,
-    analyticsConsentStatus: Accepted,
+    marketingConsentStatus: NotDecided,
+    analyticsConsentStatus: NotDecided,
     marketingTrackingId: null,
     analyticsTrackingId: null,
     deviceId: DEVICE_ID,
@@ -62,7 +62,7 @@ test('consentRequired = false ignores a stored choice and keeps it for the next 
   const storage = memoryStorage();
   const { analyticsTrackingId } = await bridge({ storage }).updateConsent({ marketing: Declined, analytics: Accepted });
   const config = await bridge({ consentRequired: false, storage }).getConfig();
-  expect(config).toMatchObject({ marketingConsentStatus: Accepted, marketingTrackingId: null, analyticsTrackingId: null });
+  expect(config).toMatchObject({ marketingConsentStatus: NotDecided, analyticsConsentStatus: NotDecided, marketingTrackingId: null, analyticsTrackingId: null });
   const again = await bridge({ storage }).getConfig();
   expect(again).toMatchObject({ marketingConsentStatus: Declined, analyticsConsentStatus: Accepted, analyticsTrackingId });
 });

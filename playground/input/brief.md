@@ -16,7 +16,7 @@ marketingConsentStatus   0 Declined, 1 Accepted, 2 NotDecided
 analyticsConsentStatus   то же
 ```
 
-`consentRequired = true`: на первом старте оба статуса `NotDecided`. `false`: оба `Accepted`, tracking ID не выдаются (оба `null`), блоки согласия скрыты.
+`consentRequired = true`: на первом старте оба статуса `NotDecided`. `false`: оба `NotDecided`, tracking ID не выдаются (оба `null`), блоки согласия скрыты.
 
 ## Блоки согласия
 
