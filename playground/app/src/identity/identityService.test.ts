@@ -66,3 +66,14 @@ test('saving before start() rejects', async () => {
   const { service } = setup({});
   await expect(service.saveConsent({ marketing: ConsentStatus.Accepted, analytics: ConsentStatus.Accepted })).rejects.toThrow();
 });
+
+test('concurrent start() calls share one getConfig request', async () => {
+  const getConfig = vi.fn().mockResolvedValue(config);
+  const { observer, subscriber, service } = setup({ getConfig });
+  await Promise.all([service.start(), service.start()]);
+  expect(getConfig).toHaveBeenCalledTimes(1);
+  expect(observer.get()).toEqual(config);
+  expect(subscriber).toHaveBeenCalledTimes(1);
+  await service.start();
+  expect(getConfig).toHaveBeenCalledTimes(2);
+});

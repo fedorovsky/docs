@@ -177,6 +177,7 @@ Dev switch: `main.tsx` reads `consentRequired` from the URL query (`?consentRequ
 - `consentRequired = false` with a stored `Declined` choice from an earlier run → statuses `Accepted`, IDs issued where missing.
 - `localStorage` unavailable or corrupt → the fake behaves as if nothing was stored and keeps the choice in memory for the session.
 - A subscriber added after `start()` finished → called at once with the current fields.
+- `start()` called while a start is in flight (React StrictMode mounts twice in development) → the second call shares the first request; one `getConfig`, one `temporaryId`, one subscriber call.
 
 ## Non-functional
 

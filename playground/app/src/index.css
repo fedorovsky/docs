@@ -21,7 +21,7 @@ h3 { font-size: 1rem; margin: 0 0 4px; }
 .block label { display: block; margin: 6px 0; }
 .block input[type='checkbox'] { margin-right: 8px; }
 .actions { display: flex; gap: 8px; margin-top: 10px; }
-.monitoring-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.monitoring-row { display: flex; flex-direction: column; gap: 16px; }
 .monitoring { margin-bottom: 0; }
 .monitoring pre { font-size: 0.8rem; overflow-x: auto; margin: 0; }
 .muted { opacity: 0.7; font-size: 0.9rem; margin: 4px 0; }

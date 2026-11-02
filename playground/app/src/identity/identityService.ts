@@ -3,17 +3,25 @@ import type { IdentityObserver } from './identityObserver';
 import type { ConsentRequest } from './types';
 
 export interface IdentityService {
-  /** Loads the config and pushes it into the observer. Rejects on failure; the observer is untouched. */
+  /** Loads the config and pushes it into the observer. Rejects on failure; the observer is untouched. A start() while one is in flight shares that request. */
   start(): Promise<void>;
   /** Saves both choices in one call. On success merges statuses and IDs into the observer; on failure rejects and touches nothing. */
   saveConsent(request: ConsentRequest): Promise<void>;
 }
 
 export function createIdentityService(api: IdentityApi, observer: IdentityObserver): IdentityService {
+  let starting: Promise<void> | null = null;
   return {
-    async start() {
-      const fields = await api.getConfig();
-      observer.set(fields);
+    start() {
+      if (starting === null) {
+        starting = api
+          .getConfig()
+          .then((fields) => observer.set(fields))
+          .finally(() => {
+            starting = null;
+          });
+      }
+      return starting;
     },
     async saveConsent(request) {
       const current = observer.get();
