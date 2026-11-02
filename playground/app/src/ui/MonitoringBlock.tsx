@@ -10,17 +10,17 @@ export function MonitoringBlock({ recorder }: Props) {
   const snapshot = useSyncExternalStore(recorder.subscribe, recorder.getSnapshot, recorder.getSnapshot);
   return (
     <section className="block monitoring" aria-label={recorder.name}>
-      <h3>{recorder.name}</h3>
-      {snapshot === null ? (
-        <p className="muted">No update yet</p>
-      ) : (
-        <>
-          <p className="muted">
+      <div className="head">
+        <h3>{recorder.name}</h3>
+        {snapshot === null ? (
+          <span className="muted">No update yet</span>
+        ) : (
+          <span className="muted">
             Updated at <time dateTime={snapshot.updatedAt.toISOString()}>{snapshot.updatedAt.toLocaleTimeString()}</time>
-          </p>
-          <pre>{JSON.stringify(snapshot.state, null, 2)}</pre>
-        </>
-      )}
+          </span>
+        )}
+      </div>
+      {snapshot !== null && <pre>{JSON.stringify(snapshot.state, null, 2)}</pre>}
     </section>
   );
 }

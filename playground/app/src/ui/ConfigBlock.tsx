@@ -12,7 +12,9 @@ export function ConfigBlock({ observer }: Props) {
   if (fields === null) return null;
   return (
     <section className="block" aria-label="Config">
-      <h3>Config</h3>
+      <div className="head">
+        <h3>Config</h3>
+      </div>
       <pre>{JSON.stringify(Object.fromEntries(IDENTITY_FIELD_KEYS.map((key) => [key, fields[key]])), null, 2)}</pre>
     </section>
   );

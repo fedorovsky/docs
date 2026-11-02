@@ -38,28 +38,38 @@ export function App({ observer, recorders, createApi }: AppProps) {
   return (
     <main>
       <h1>Identity and tracking consent</h1>
-      <StartPanel consentRequired={consentRequired} onConsentRequiredChange={setConsentRequired} onStart={handleStart} pending={start === 'pending'} />
-      {start === 'pending' && fields === null && <p className="muted">Loading…</p>}
-      {start === 'failed' && (
-        <section className="block" role="alert">
-          <p className="error">{LOAD_ERROR_TEXT}</p>
-          <button type="button" onClick={handleStart}>
-            Retry
-          </button>
-        </section>
-      )}
-      {fields !== null && service !== null && (
-        <>
-          <ConfigBlock observer={observer} />
-          <ConsentBlock variant="initial" observer={observer} service={service} />
-          <ConsentBlock variant="settings" observer={observer} service={service} />
+      <div className="layout">
+        <div>
+          <StartPanel consentRequired={consentRequired} onConsentRequiredChange={setConsentRequired} onStart={handleStart} pending={start === 'pending'} />
+          {start === 'pending' && fields === null && <p className="muted">Loading…</p>}
+          {start === 'failed' && (
+            <section className="block" role="alert">
+              <div className="row">
+                <span className="error">{LOAD_ERROR_TEXT}</span>
+                <span className="actions">
+                  <button type="button" onClick={handleStart}>
+                    Retry
+                  </button>
+                </span>
+              </div>
+            </section>
+          )}
+          {fields !== null && service !== null && (
+            <>
+              <ConfigBlock observer={observer} />
+              <ConsentBlock variant="initial" observer={observer} service={service} />
+              <ConsentBlock variant="settings" observer={observer} service={service} />
+            </>
+          )}
+        </div>
+        {fields !== null && service !== null && (
           <section className="monitoring-row" aria-label="Monitoring">
             {recorders.map((recorder) => (
               <MonitoringBlock key={recorder.name} recorder={recorder} />
             ))}
           </section>
-        </>
-      )}
+        )}
+      </div>
     </main>
   );
 }

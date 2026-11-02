@@ -69,21 +69,23 @@ export function ConsentBlock({ variant, observer, service }: Props) {
   return (
     <section className="block" aria-labelledby={`${id}-title`} data-testid={id}>
       <h2 id={`${id}-title`}>{TITLES[variant]}</h2>
-      <label>
-        <input type="checkbox" role="switch" checked={marketing} disabled={pending} onChange={(e) => setMarketing(e.target.checked)} />
-        Marketing
-      </label>
-      <label>
-        <input type="checkbox" role="switch" checked={analytics} disabled={pending} onChange={(e) => setAnalytics(e.target.checked)} />
-        Analytics
-      </label>
-      <div className="actions">
-        <button type="button" disabled={pending} onClick={() => save({ marketing: toStatus(marketing), analytics: toStatus(analytics) })}>
-          Save
-        </button>
-        <button type="button" disabled={pending} onClick={() => save({ marketing: ConsentStatus.Accepted, analytics: ConsentStatus.Accepted })}>
-          Accept all
-        </button>
+      <div className="row">
+        <label>
+          <input type="checkbox" role="switch" checked={marketing} disabled={pending} onChange={(e) => setMarketing(e.target.checked)} />
+          Marketing
+        </label>
+        <label>
+          <input type="checkbox" role="switch" checked={analytics} disabled={pending} onChange={(e) => setAnalytics(e.target.checked)} />
+          Analytics
+        </label>
+        <span className="actions">
+          <button type="button" disabled={pending} onClick={() => save({ marketing: toStatus(marketing), analytics: toStatus(analytics) })}>
+            Save
+          </button>
+          <button type="button" disabled={pending} onClick={() => save({ marketing: ConsentStatus.Accepted, analytics: ConsentStatus.Accepted })}>
+            Accept all
+          </button>
+        </span>
       </div>
       {error && <p role="alert" className="error">{error}</p>}
     </section>
