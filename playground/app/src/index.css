@@ -1,0 +1,28 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+  line-height: 1.4;
+}
+body {
+  margin: 0;
+  padding: 16px;
+  max-width: 960px;
+  margin-inline: auto;
+}
+h1 { font-size: 1.4rem; }
+h2 { font-size: 1.1rem; margin: 0 0 8px; }
+h3 { font-size: 1rem; margin: 0 0 4px; }
+.block {
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+.block label { display: block; margin: 6px 0; }
+.block input[type='checkbox'] { margin-right: 8px; }
+.actions { display: flex; gap: 8px; margin-top: 10px; }
+.monitoring-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.monitoring { margin-bottom: 0; }
+.monitoring pre { font-size: 0.8rem; overflow-x: auto; margin: 0; }
+.muted { opacity: 0.7; font-size: 0.9rem; margin: 4px 0; }
+.error { color: #c0392b; margin: 8px 0; }
