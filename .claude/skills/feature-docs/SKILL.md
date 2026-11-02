@@ -26,7 +26,10 @@ Layout inside the feature folder, fixed regardless of project conventions (where
 Bundled files, relative to this skill's directory:
 
 - `assets/templates/{en,ru}/{prd,spec,tasks}.md`: the document structure.
-- `references/examples/orders-csv-export/`: a worked example. Read the `en/` set once for depth and tone, and `ru/` before writing a mirror.
+- `references/examples/orders-csv-export/`: a worked example, read only when writing a new document: the `en/` set once for depth and tone, and `ru/prd.md` before the first mirror. Review, Update and Implement don't need it.
+- `references/mirror.md`: the bilingual mirror rules. Read before writing or editing any `ru/` file.
+- `references/diagrams.md`: when to draw, which Mermaid type, where. Read before adding or editing a diagram.
+- `references/checklist.md`: the review checklist. Read at hand-over and in Review mode.
 - `scripts/check_mirror.py`: checks each file on its own (frontmatter complete and valid, headings the template's, IDs defined once, task fields, no scaffolding), each EN/RU pair structurally (headings paired by template position, lists, tables, code blocks byte-identical, Mermaid by node IDs and arrows) and each feature across its documents (every requirement in the Spec's coverage table and, unless **Not covered:**, in some task's *Covers*; every "PRD Qn" / "Spec Qn" defined). Run it (Python 3, no packages); don't read it.
 - `scripts/test_check_mirror.py`: the script's own regression cases, for whoever changes the script; not part of checking a feature.
 
@@ -45,8 +48,8 @@ The project is the codebase the feature belongs to; in a monorepo, the package o
 | Several at once | PRD, then Spec, then Tasks, each from the previous one, in one pass. No review stop between them unless asked. |
 | Tasks | Read the Spec and the PRD, then write `tasks.md` (see *Tasks*). No Spec means write the Spec first. A `draft` Spec means the tasks may change with it: say so. |
 | Implement | See *Working through tasks*. |
-| Update | Run the mirror check first and resolve an out-of-sync pair before editing (see *Bilingual mirror*). Edit both languages in one pass, bump `updated`, keep IDs stable. A Spec change pulls `tasks.md` along (see *Tasks*). |
-| Review | Report against the checklist, mirror problems included. Read the code and the git log too, not only the documents: the usual findings are a Spec that still describes the state before the feature, tasks that describe a Spec since changed, and requirements with no evidence in the code. Don't rewrite unless asked. |
+| Update | Run the mirror check first and resolve an out-of-sync pair before editing (see `references/mirror.md`). Edit both languages in one pass, bump `updated`, keep IDs stable. A Spec change pulls `tasks.md` along (see *Tasks*). |
+| Review | Report against `references/checklist.md`, mirror problems included. Read the code and the git log too, not only the documents: the usual findings are a Spec that still describes the state before the feature, tasks that describe a Spec since changed, and requirements with no evidence in the code. Don't rewrite unless asked. |
 
 ### 3. Gather facts; invent nothing
 
@@ -69,7 +72,7 @@ Never substitute a plausible value for a missing metric, baseline, date or owner
 - Drop *(optional)* sections that don't apply. A required section with nothing to say gets one line ("No new dependencies.") so reviewers know it was considered.
 - Remove all scaffolding: angle-bracket placeholders, guidance text, *(optional)* markers, frontmatter comments.
 - Size to the feature: a small feature's PRD fits one screen. Tables and short bullets over prose.
-- English first, in English whatever language the sources are in; then the Russian mirror from the Russian template. Never draft the two independently.
+- English first, in English whatever language the sources are in; then the Russian mirror from the Russian template, by the rules in `references/mirror.md`. Never draft the two independently. A diagram follows `references/diagrams.md`.
 - Links: `prd:` / `spec:` / `tasks:` point to the two siblings in the same language folder (`./prd.md`), so every document reaches the other two; `mirror:` points to the twin (`../ru/prd.md` from `en/`).
 - Sources: every external source (Jira, Figma, Confluence, a PR, research) is an entry in `links:` of the form `"Role: name — URL"` (`"Jira: TRACK-12"` alone when the key resolves in the team's tracker), in English in both versions, in the document it informs: tickets, designs and research in the PRD, PRs and technical pages in the Spec, the ticket and PRs in Tasks. A fact cites its source in the sentence that uses it (*Problem*, the metrics table, *Context & current state*, *Alternatives & decisions*). No bare URL anywhere, and no separate list of sources in the body.
 
@@ -81,7 +84,7 @@ From the project root:
 python3 <skill-dir>/scripts/check_mirror.py <path to the feature folder>
 ```
 
-Pass the feature folder, or a folder of features, not the whole docs tree: the script reports what it ignored and exits 2 when it checked nothing. Fix every mismatch. Without `python3`, say so and compare by hand against the *Bilingual mirror* rules. The script sees structure only, so also read both versions side by side for differences in meaning. Then go through the checklist.
+Pass the feature folder, or a folder of features, not the whole docs tree: the script reports what it ignored and exits 2 when it checked nothing. Fix every mismatch. Without `python3`, say so and compare by hand against `references/mirror.md`. The script sees structure only, so also read both versions side by side for differences in meaning. Then go through `references/checklist.md`.
 
 The hand-over message names the files, the assumptions the draft rests on (listed apart from the open questions, so a reviewer knows what to check first), the open questions, every change made to a document the user didn't ask to change, and the next step: answers needed before review, or breaking a Spec into tasks.
 
@@ -138,68 +141,3 @@ When all tasks are ticked, re-read the Spec against the code: *Context & current
 ### Status
 
 `draft` → `review` → `approved` → `shipped` → `deprecated`. Change it only on the user's word or when unambiguous. A meaningful change to an `approved` document returns it to `review`; say so instead of editing silently.
-
-## Bilingual mirror
-
-English is the main document (`en/`, `lang: en`). Russian (`ru/`, `lang: ru`) is a mirror for convenient reading: it never adds, decides or drops anything, and when the two disagree in meaning, English is right unless the Russian side holds a newer edit (see *Out-of-sync pair* below). A reader of either version learns exactly the same things:
-
-- **Structure**: H1, H2 and the template's H3 are the template's, verbatim and in its order, in each language; subsections below that are free and pair up by position; same table rows, list items and checkbox states.
-- **Facts**: every number, date, name, status, priority and decision on both sides. No clarification, example or caveat on one side only.
-- **Untranslated**: IDs, priorities and task labels; anything in backticks; fenced code blocks except Mermaid, byte-identical with comments; people's names; UI text (screen names, labels, messages, empty states), quoted as the product shows or will show it. When the UI language isn't settled, UI text is English in both versions, including labels a source quotes in another language: «Сохранить» becomes "Save", and the final copy is a design question.
-- **Diagrams**: identical node IDs, participants and arrows. The code inside a label (a call, identifier, field or value, such as `init(fields)` or `orders-<id>.csv`) stays byte-identical; the words around it are translated.
-- **Links**: identical, relative to the language folder.
-- **Frontmatter**: identical except `title`, `lang`, `mirror`; `status` and `updated` change together.
-
-Translate for meaning. The Russian reads as written by a Russian-speaking engineer; terms the team uses in English (rollout, endpoint) may stay English.
-
-Out-of-sync pair: `git diff` / `git log` both files and port the change to the other side. Conflicting changes on both sides: show the user and ask which is right. Never regenerate one side from the other; that discards someone's edit.
-
-## Diagrams
-
-Mermaid only, in fenced `mermaid` blocks: it renders in Git hosts, Confluence and IDEs, and stays diffable. No ASCII art, images or external tools.
-
-| Showing | Type | Where |
-|---|---|---|
-| User flow, decision logic | `flowchart` | PRD *Users & scenarios* |
-| Components interacting over time | `sequenceDiagram` | Spec *Overview* |
-| Component or service structure | `flowchart` with `subgraph` | Spec *Overview*, *Components & changes* |
-| Tables and relations | `erDiagram` | Spec *Data model* |
-| Entity lifecycle | `stateDiagram-v2` | Spec *Data model*, *Edge cases* |
-
-Add one when prose can't explain it quickly: three or more parties, or non-trivial states. At most about 15 nodes; split by concern. Names match the code and the text. A PRD diagram shows what the user sees and does, never internals.
-
-## Checklist
-
-**PRD**
-- [ ] Problem names a concrete audience and evidence.
-- [ ] Non-goals are present and specific.
-- [ ] Every requirement has an ID, priority and checkable acceptance criteria.
-- [ ] No implementation details.
-- [ ] Every metric has a source and a target, or a question for the unknown.
-- [ ] Product questions the Spec depends on are here.
-- [ ] Every contradiction in the sources is an open question quoting both statements.
-
-**Spec**
-- [ ] Every requirement is in *Requirements coverage*; gaps marked **Partial:** / **Not covered:**.
-- [ ] Every assumption cites a PRD question and breaks no requirement, or the one it breaks is marked **Partial:**.
-- [ ] *Context & current state* matches the code, with paths; once the tasks are done, so do the diagrams and the signatures.
-- [ ] Each non-obvious decision lists an alternative.
-- [ ] Edge cases, testing plan, rollout and rollback present.
-- [ ] No goal or requirement redefined.
-
-**Tasks**
-- [ ] Every task has exactly one *Covers*: requirement IDs or one label (`setup` / `verify` / `rollout`), never both; every covered requirement appears in some *Covers*.
-- [ ] Real *Files*, *Change* ≤ 2 sentences, runnable *Done when*; nothing beyond the Spec.
-- [ ] The entry point comes in the last task its flow needs; nothing half-built is reachable.
-- [ ] Every task ID is defined once and tasks are in execution order: *Depends on* points to a task above; every *Blocked by* names a question.
-- [ ] No task describes something the Spec no longer says; a replaced task names its replacement.
-- [ ] Changes to the PRD or Spec are listed in the hand-over.
-
-**All**
-- [ ] Frontmatter complete (`TBD` for unknowns); sibling and mirror links correct.
-- [ ] Every external source is a `"Role: name — URL"` entry in `links:` of the document it informs, and each fact taken from it is cited where it is used; no bare URLs.
-- [ ] Open questions numbered and referenced as "PRD Qn"; everything unresolved listed, with an owner where known.
-- [ ] Blocking questions were asked before drafting, or the hand-over says why they were skipped and lists the assumptions made instead.
-- [ ] No scaffolding left.
-- [ ] Mermaid syntax valid; names match the text.
-- [ ] `check_mirror.py` passes; a side-by-side read finds no difference in meaning.
