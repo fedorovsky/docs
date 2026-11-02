@@ -25,8 +25,6 @@ const accepted: IdentityFields = {
   consentRequired: false,
   marketingConsentStatus: Accepted,
   analyticsConsentStatus: Accepted,
-  marketingTrackingId: 'm-1',
-  analyticsTrackingId: 'a-1',
 };
 
 /** A fake-like bridge: the config follows the consentRequired the App asked for. */
@@ -82,15 +80,20 @@ test('only the settings block once both consents are decided', async () => {
   expect(screen.queryByRole('heading', { name: 'Tracking consent' })).not.toBeInTheDocument();
 });
 
-test('Start with the switch off: no consent blocks, monitoring shows both IDs and deviceId', async () => {
+test('Start with the switch off: no consent blocks, no tracking IDs, deviceId everywhere', async () => {
   const { user, createBridge } = setup();
   await user.click(consentSwitch());
   await user.click(startButton());
   expect(createBridge).toHaveBeenCalledWith(false, false);
   const headers = await screen.findByRole('region', { name: 'Request headers' });
   expect(headers).toHaveTextContent('"X-Device-Id": "device-0001"');
-  expect(headers).toHaveTextContent('"X-Analytics-Tracking-Id": "a-1"');
+  expect(headers).not.toHaveTextContent('Tracking-Id');
   expect(headers).not.toHaveTextContent('Consent-Status');
+  for (const name of ['Analytics collector', 'Game config']) {
+    const block = screen.getByRole('region', { name });
+    expect(block).toHaveTextContent('"deviceId": "device-0001"');
+    expect(block).toHaveTextContent('"analyticsTrackingId": null');
+  }
   expect(screen.queryByRole('heading', { name: 'Tracking consent' })).not.toBeInTheDocument();
   expect(screen.queryByRole('heading', { name: 'Tracking settings' })).not.toBeInTheDocument();
 });

@@ -7,7 +7,7 @@
 ## Конфиг на старте
 
 ```
-marketingTrackingId      null, пока статус не Accepted
+marketingTrackingId      null, пока статус не Accepted; при consentRequired = false всегда null
 analyticsTrackingId      то же
 deviceId                 пока константа
 temporaryId              случайное, новое на каждом старте
@@ -16,7 +16,7 @@ marketingConsentStatus   0 Declined, 1 Accepted, 2 NotDecided
 analyticsConsentStatus   то же
 ```
 
-`consentRequired = true`: на первом старте оба статуса `NotDecided`. `false`: оба `Accepted`, оба ID в конфиге, блоки согласия скрыты.
+`consentRequired = true`: на первом старте оба статуса `NotDecided`. `false`: оба `Accepted`, tracking ID не выдаются (оба `null`), блоки согласия скрыты.
 
 ## Блоки согласия
 

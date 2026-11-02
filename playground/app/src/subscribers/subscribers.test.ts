@@ -17,7 +17,7 @@ const required: IdentityFields = {
 const notRequired: IdentityFields = {
   ...required,
   consentRequired: false,
-  analyticsTrackingId: 'a-1',
+  marketingTrackingId: null,
   analyticsConsentStatus: ConsentStatus.Accepted,
 };
 
@@ -35,13 +35,13 @@ test('with consentRequired = true: IDs, temporaryId and both statuses, never dev
   }
 });
 
-test('with consentRequired = false: IDs, temporaryId and deviceId, no statuses', () => {
+test('with consentRequired = false: null IDs, temporaryId and deviceId, no statuses', () => {
   for (const make of [createAnalyticsCollectorSubscriber, createGameConfigSubscriber]) {
     const sub = make();
     sub.handle(notRequired);
     expect(sub.getSnapshot()?.state).toEqual({
-      marketingTrackingId: 'm-1',
-      analyticsTrackingId: 'a-1',
+      marketingTrackingId: null,
+      analyticsTrackingId: null,
       temporaryId: 'tmp-1',
       deviceId: 'device-0001',
     });
@@ -61,12 +61,10 @@ test('request headers: strings, consentRequired and deviceId always included, nu
   });
 });
 
-test('request headers with consentRequired = false carry deviceId and no statuses', () => {
+test('request headers with consentRequired = false carry deviceId, no tracking IDs and no statuses', () => {
   const sub = createRequestHeadersSubscriber();
   sub.handle(notRequired);
   expect(sub.getSnapshot()?.state).toEqual({
-    'X-Marketing-Tracking-Id': 'm-1',
-    'X-Analytics-Tracking-Id': 'a-1',
     'X-Temporary-Id': 'tmp-1',
     'X-Device-Id': 'device-0001',
     'X-Consent-Required': 'false',

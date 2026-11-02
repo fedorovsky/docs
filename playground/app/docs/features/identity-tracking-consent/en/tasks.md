@@ -91,12 +91,18 @@ Delivers the identity flow of the [Spec](./spec.md): scaffold, fake bridge, obse
   - Change: the `forgetChoice` option of the fake and the "first start" switch on the start panel passed through `createBridge` (Spec *Components & changes*, *API / interfaces*)
   - Done when: a fake test shows a stored choice gone with `forgetChoice`; an `App` test shows `createBridge` called with the switch's value; in the browser a start with "first start" on brings the initial block back
   - Depends on: T13
+- [x] **T16. Stop issuing tracking IDs without consent**
+  - Covers: R2
+  - Files: `src/bridge/fakeIdentityBridge.ts`, `src/bridge/fakeIdentityBridge.test.ts`, `src/App.test.tsx`, `src/subscribers/subscribers.test.ts`
+  - Change: with `consentRequired = false` the fake `getConfig` returns both IDs `null` and leaves storage alone (Spec *API / interfaces*)
+  - Done when: tests show `null` IDs and untouched storage with `consentRequired = false`, a stored choice back on the next `consentRequired = true` start, and `deviceId` without tracking-ID headers in `App`
+  - Depends on: T15
 - [x] **T9. Walk through the acceptance criteria**
   - Covers: `verify`
   - Files: `playground/app/` in the browser, started from the start panel in both `consentRequired` modes
   - Change: run the PRD acceptance criteria of R1–R12 except R7 by hand, including a revoke-and-accept cycle, a restart with "first start" and a reload (Spec *Testing plan*)
   - Done when: every criterion passes and the monitoring times change only when a field changed
-  - Depends on: T8, T15
+  - Depends on: T8, T15, T16
 - [ ] ~~**T10. Apply the final design and copy**~~ Dropped 2026-11-02: no mockups or localisation for now (PRD Q4)
 - [ ] **T11. Release**
   - Covers: `rollout`

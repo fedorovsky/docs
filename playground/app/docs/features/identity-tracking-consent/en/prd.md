@@ -51,7 +51,7 @@ The user is anyone who opens the app. All consent UI lives on the one page the a
 flowchart TD
   Start[App starts] --> Config[Config loaded]
   Config --> Required{consentRequired?}
-  Required -- false --> Hidden[No consent blocks, both consents accepted]
+  Required -- false --> Hidden[No consent blocks, both consents accepted, no tracking IDs]
   Required -- true --> Settings[Settings block shown]
   Settings --> Undecided{Any consent still undecided?}
   Undecided -- yes --> Initial[Initial block shown as well]
@@ -70,7 +70,7 @@ flowchart TD
 | ID | Requirement | Priority | Acceptance criteria |
 |----|-------------|----------|---------------------|
 | R1 | On start the app loads the identity config with seven fields: `marketingTrackingId`, `analyticsTrackingId`, `deviceId`, `temporaryId`, `consentRequired`, `marketingConsentStatus`, `analyticsConsentStatus` (statuses: 0 Declined, 1 Accepted, 2 NotDecided) | Must | With `consentRequired = true` and no saved choice both statuses are NotDecided and both tracking IDs are `null`; `temporaryId` differs between two starts; `deviceId` is the same |
-| R2 | With `consentRequired = false` both consents are Accepted, both tracking IDs come in the config and no consent block is shown | Must | Start with `consentRequired = false`: no consent block on the page; the monitoring blocks show both tracking IDs |
+| R2 | With `consentRequired = false` both consents are Accepted, no tracking ID is issued (both are `null`), all three consumers receive `deviceId`, and no consent block is shown (clarified by the product owner on 2026-11-02; before that both tracking IDs were issued) | Must | Start with `consentRequired = false`: no consent block on the page; the config block shows both tracking IDs as `null`; the analytics and game-config blocks show `deviceId` and `null` IDs; the headers block has `deviceId` and no tracking-ID headers |
 | R3 | Initial consent block: shown when `consentRequired = true` and at least one consent is NotDecided; has marketing and analytics toggles with the current statuses, "Save" and "Accept all" | Must | On first start the block is shown with both toggles; after a save that decides both consents the block disappears without a reload |
 | R4 | Settings consent block: shown whenever `consentRequired = true`; the user revokes a consent here by switching its toggle off and saving | Must | Switch marketing off and press "Save": marketing becomes Declined and its tracking ID `null`; analytics is unchanged |
 | R5 | Saving sends both choices in one call, as the toggles stand: on = Accepted, off = Declined; "Accept all" saves both as Accepted; the two consents are independent | Must | Save with marketing on and analytics off: statuses Accepted and Declined; "Accept all" with both toggles off: both Accepted |

@@ -51,7 +51,7 @@ links: [TRACK-12]
 flowchart TD
   Start[Приложение стартует] --> Config[Конфиг загружен]
   Config --> Required{consentRequired?}
-  Required -- false --> Hidden[Блоков согласия нет, оба согласия приняты]
+  Required -- false --> Hidden[Блоков согласия нет, оба согласия приняты, tracking ID нет]
   Required -- true --> Settings[Показан блок настроек]
   Settings --> Undecided{Есть ещё нерешённое согласие?}
   Undecided -- да --> Initial[Показан и стартовый блок]
@@ -70,7 +70,7 @@ flowchart TD
 | ID | Требование | Приоритет | Критерии приёмки |
 |----|------------|-----------|------------------|
 | R1 | При старте приложение загружает конфиг identity с семью полями: `marketingTrackingId`, `analyticsTrackingId`, `deviceId`, `temporaryId`, `consentRequired`, `marketingConsentStatus`, `analyticsConsentStatus` (статусы: 0 Declined, 1 Accepted, 2 NotDecided) | Must | При `consentRequired = true` и без сохранённого выбора оба статуса NotDecided и оба tracking ID равны `null`; `temporaryId` различается между двумя стартами; `deviceId` тот же |
-| R2 | При `consentRequired = false` оба согласия Accepted, оба tracking ID приходят в конфиге, и блоки согласия не показываются | Must | Старт с `consentRequired = false`: на странице нет блоков согласия; блоки мониторинга показывают оба tracking ID |
+| R2 | При `consentRequired = false` оба согласия Accepted, tracking ID не выдаются (оба `null`), все три потребителя получают `deviceId`, и блоки согласия не показываются (продакт уточнил 2026-11-02; до этого выдавались оба tracking ID) | Must | Старт с `consentRequired = false`: на странице нет блоков согласия; блок конфига показывает оба tracking ID как `null`; блоки аналитики и гейм-конфига показывают `deviceId` и `null` ID; в блоке хедеров есть `deviceId` и нет хедеров tracking ID |
 | R3 | Стартовый блок согласия: показан при `consentRequired = true` и хотя бы одном согласии NotDecided; содержит переключатели marketing и analytics с текущими статусами, "Save" и "Accept all" | Must | При первом старте блок показан с обоими переключателями; после сохранения, которое решает оба согласия, блок исчезает без перезагрузки |
 | R4 | Блок настроек согласия: показан всегда при `consentRequired = true`; здесь пользователь отзывает согласие, выключая его переключатель и сохраняя | Must | Выключить marketing и нажать "Save": marketing становится Declined, его tracking ID — `null`; analytics не меняется |
 | R5 | Сохранение отправляет оба выбора одним вызовом, как стоят переключатели: включён = Accepted, выключен = Declined; "Accept all" сохраняет оба как Accepted; два согласия независимы | Must | Сохранить с включённым marketing и выключенным analytics: статусы Accepted и Declined; "Accept all" при обоих выключенных переключателях: оба Accepted |

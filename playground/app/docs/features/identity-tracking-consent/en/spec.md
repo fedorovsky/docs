@@ -139,7 +139,7 @@ Fake behaviour, `createFakeIdentityBridge({ consentRequired, forgetChoice = fals
 - `storage: null` keeps the choice in memory only; `newId` issues the tracking and temporary IDs (tests pass a counter).
 - Every call waits a random `delayMs` and never fails (PRD R11).
 - `getConfig` with `consentRequired = true`: statuses and IDs from storage, or `NotDecided` / `null` when nothing is stored.
-- `getConfig` with `consentRequired = false`: both statuses `Accepted`; IDs from storage when present, otherwise issued and stored; stored statuses are ignored.
+- `getConfig` with `consentRequired = false`: both statuses `Accepted` and both IDs `null` (PRD R2); storage is neither read nor written, so a choice stored with `consentRequired = true` is back on the next start in that mode.
 - `updateConsent`, per field: `Accepted` with stored status `Accepted` → the same ID; `Accepted` otherwise → a new ID; `Declined` → `null`. Both statuses and both IDs are stored together.
 
 The `consentRequired` passed to the fake is the start panel's switch; the fake reads it from nowhere else.
@@ -149,7 +149,7 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 | PRD ID | How it's satisfied | Section |
 |--------|--------------------|---------|
 | R1 | The fake `getConfig` returns the seven fields; `temporaryId` fresh per call, `deviceId` constant | API / interfaces |
-| R2 | The fake returns `Accepted` and IDs when `consentRequired = false`; `App` hides both blocks | API / interfaces, Visibility and UI behaviour |
+| R2 | The fake returns `Accepted` and `null` IDs when `consentRequired = false`; the projections pass `deviceId` to all three subscribers in that mode; `App` hides both blocks | API / interfaces, Subscriber fields, Visibility and UI behaviour |
 | R3 | `ConsentBlock` variant `initial`, shown by the visibility rule | Visibility and UI behaviour |
 | R4 | `ConsentBlock` variant `settings`; off toggle + "Save" sends `Declined` | Visibility and UI behaviour |
 | R5 | One `updateConsent` call with both fields; "Accept all" sends both `Accepted` | Visibility and UI behaviour, API / interfaces |
@@ -170,6 +170,7 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 | Fake persistence | In memory only; `localStorage` | `localStorage` | The ticket requires the choice to survive a reload |
 | Switching `consentRequired` in the fake | Build-time constant; URL query `?consentRequired=false`; a switch on a debug start panel | Start panel switch, on by default | Testers switch modes and restart without a reload; the value still comes only from the config object |
 | Fake delay and errors | Fixed delay; delay option with a 300–1000 ms default; simulated errors | Delay option, no simulated errors | Tests run with zero delay; manual testing sees delays only; the error paths are covered by tests with rejecting stubs (PRD R11) |
+| Fake storage with `consentRequired = false` | Store `Accepted` with the `null` IDs; leave storage alone | Leave storage alone | Nothing is decided by the user in that mode; a stored choice from the other mode stays intact |
 | Dropping `deviceId` | In the observer; in each subscriber's projection | Projection | The ticket says the observer delivers all seven fields; the rule is about what subscribers write, and it differs per subscriber (headers always carry it) |
 | Header names | The ticket leaves them to the engineer | The `X-…` names in *Subscriber fields* | Conventional; confirmed with the backend before the real integration (Spec Q3) |
 
@@ -178,14 +179,14 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 - `start()` fails (the fake never fails here; the real bridge may) → the page shows "Could not load the config." and "Retry"; no subscriber is called; "Retry" starts again with the switch's current value.
 - "Start" pressed while a start is in flight → impossible, the button is disabled.
 - "Start" pressed again after a successful start → a new fake bridge and service; the observer gets the new config (a new `temporaryId` at least), so the subscribers are called; a failed restart leaves the previous state on the page and shows the error.
-- "Start" with "first start" on → the stored choice is gone before `getConfig`; with `consentRequired` on both statuses are `NotDecided` and both IDs `null`, with it off new IDs are issued.
+- "Start" with "first start" on → the stored choice is gone before `getConfig`; with `consentRequired` on both statuses are `NotDecided` and both IDs `null`, with it off both statuses are `Accepted` and both IDs `null`.
 - A save fails (the fake never fails; the real bridge may) → the service rejects, the observer is untouched, the block shows the error and keeps the toggles as the user set them; "Save" and "Accept all" are enabled again.
 - A save that changes nothing (both already `Accepted`, both toggles on) → the fake returns the same IDs, `observer.set` sees no change, no subscriber is called, monitoring times stay.
 - Both consents `Declined`, both toggles off, "Save" → both stay `Declined` with `null` IDs; no change, no subscriber call.
 - A second click while a call is pending → impossible, the buttons are disabled.
 - A save in one block → both blocks re-read the statuses from the observer; the initial block disappears once both are decided.
 - Reload after accepting → `getConfig` returns the stored `Accepted` and the same IDs; the new `temporaryId` means the subscribers are called at start.
-- `consentRequired = false` with a stored `Declined` choice from an earlier run → statuses `Accepted`, IDs issued where missing.
+- `consentRequired = false` with a stored choice from an earlier run → statuses `Accepted`, IDs `null`; the stored choice is untouched and returns on the next start with `consentRequired = true`.
 - `localStorage` unavailable or corrupt → the fake behaves as if nothing was stored and keeps the choice in memory for the session.
 - A subscriber added after `start()` finished → called at once with the current fields.
 - `start()` called while a start is in flight (React StrictMode mounts twice in development) → the second call shares the first request; one `getConfig`, one `temporaryId`, one subscriber call.

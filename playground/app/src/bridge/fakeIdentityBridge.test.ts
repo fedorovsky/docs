@@ -44,26 +44,27 @@ test('temporaryId is new on every getConfig', async () => {
   expect(first.deviceId).toBe(second.deviceId);
 });
 
-test('consentRequired = false: both Accepted, IDs issued once and kept', async () => {
+test('consentRequired = false: both Accepted, no tracking IDs, nothing stored', async () => {
   const storage = memoryStorage();
-  const a = bridge({ consentRequired: false, storage });
-  const first = await a.getConfig();
-  expect(first).toMatchObject({ marketingConsentStatus: Accepted, analyticsConsentStatus: Accepted, consentRequired: false });
-  expect(first.marketingTrackingId).toBeTruthy();
-  expect(first.analyticsTrackingId).toBeTruthy();
-  const second = await a.getConfig();
-  expect(second.marketingTrackingId).toBe(first.marketingTrackingId);
-  expect(second.analyticsTrackingId).toBe(first.analyticsTrackingId);
+  const config = await bridge({ consentRequired: false, storage }).getConfig();
+  expect(config).toMatchObject({
+    marketingConsentStatus: Accepted,
+    analyticsConsentStatus: Accepted,
+    marketingTrackingId: null,
+    analyticsTrackingId: null,
+    deviceId: DEVICE_ID,
+    consentRequired: false,
+  });
+  expect(storage.data.size).toBe(0);
 });
 
-test('consentRequired = false ignores a stored Declined choice', async () => {
+test('consentRequired = false ignores a stored choice and keeps it for the next consentRequired = true start', async () => {
   const storage = memoryStorage();
-  const trueMode = bridge({ storage });
-  await trueMode.updateConsent({ marketing: Declined, analytics: Accepted });
-  const falseMode = bridge({ consentRequired: false, storage });
-  const config = await falseMode.getConfig();
-  expect(config.marketingConsentStatus).toBe(Accepted);
-  expect(config.marketingTrackingId).toBeTruthy();
+  const { analyticsTrackingId } = await bridge({ storage }).updateConsent({ marketing: Declined, analytics: Accepted });
+  const config = await bridge({ consentRequired: false, storage }).getConfig();
+  expect(config).toMatchObject({ marketingConsentStatus: Accepted, marketingTrackingId: null, analyticsTrackingId: null });
+  const again = await bridge({ storage }).getConfig();
+  expect(again).toMatchObject({ marketingConsentStatus: Declined, analyticsConsentStatus: Accepted, analyticsTrackingId });
 });
 
 test('Accepted → Accepted keeps the ID', async () => {
