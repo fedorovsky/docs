@@ -15,7 +15,6 @@ function bridge(overrides: Partial<Parameters<typeof createFakeIdentityBridge>[0
   return createFakeIdentityBridge({
     consentRequired: true,
     delayMs: [0, 0],
-    errorRate: 0,
     storage: memoryStorage(),
     newId: () => `id-${++n}`,
     ...overrides,
@@ -106,21 +105,6 @@ test('the choice survives a new bridge instance over the same storage', async ()
   expect(storage.data.has(STORAGE_KEY)).toBe(true);
 });
 
-test('a failing updateConsent rejects and stores nothing; getConfig never fails', async () => {
-  const storage = memoryStorage();
-  const a = bridge({ storage, errorRate: 1 });
-  await expect(a.updateConsent({ marketing: Accepted, analytics: Accepted })).rejects.toThrow('Fake bridge error');
-  expect(storage.data.size).toBe(0);
-  await expect(a.getConfig()).resolves.toMatchObject({ marketingConsentStatus: NotDecided });
-});
-
-test('errorRate uses the injected random', async () => {
-  const values = [0.5, 0.95, 0.5, 0.05]; // delay, error check, delay, error check
-  let i = 0;
-  const a = bridge({ errorRate: 0.1, random: () => values[i++] });
-  await expect(a.updateConsent({ marketing: Accepted, analytics: Accepted })).resolves.toBeTruthy();
-  await expect(a.updateConsent({ marketing: Accepted, analytics: Accepted })).rejects.toThrow();
-});
 
 test('unreadable storage behaves as nothing stored and keeps the choice in memory', async () => {
   const broken: StorageLike = {

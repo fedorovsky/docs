@@ -17,7 +17,7 @@ links: [TRACK-12]
 
 ## Summary
 
-An identity service loads the startup config through the native bridge (`IdentityBridge`), pushes the seven identity fields into an identity observer and saves consent through the same bridge; the observer calls three recording subscribers (request headers, analytics collector, game config) at start and whenever a field changes. Until the native bridge ships, `IdentityBridge` is a fake that keeps the choice in `localStorage` and answers with a delay and occasional errors. The UI is one page with the two consent blocks and the three monitoring blocks. See the [PRD](./prd.md) for the why.
+An identity service loads the startup config through the native bridge (`IdentityBridge`), pushes the seven identity fields into an identity observer and saves consent through the same bridge; the observer calls three recording subscribers (request headers, analytics collector, game config) at start and whenever a field changes. Until the native bridge ships, `IdentityBridge` is a fake that keeps the choice in `localStorage` and answers with a delay. The UI is one page with the two consent blocks and the three monitoring blocks. See the [PRD](./prd.md) for the why.
 
 ## Context & current state
 
@@ -59,7 +59,7 @@ sequenceDiagram
 - `src/identity/useIdentity.ts` — new: `useIdentity(observer)`, the `useSyncExternalStore` hook both consent blocks use.
 - `src/identity/identityService.ts` — new: `createIdentityService(bridge, observer)` with `start()` (calls `getConfig`, then `observer.set`) and `saveConsent(request)` (calls `updateConsent`; on success merges the two statuses from the request and the two IDs from the response into the current fields and calls `observer.set`; on failure rethrows and touches nothing).
 - `src/bridge/identityBridge.ts` — new: the `IdentityBridge` interface, the native bridge contract (config and consent); the real bridge adapter will implement it later.
-- `src/bridge/fakeIdentityBridge.ts` — new: `createFakeIdentityBridge(options)`; behaviour in *Data model* and *API / interfaces*.
+- `src/bridge/fakeIdentityBridge.ts` — new: `createFakeIdentityBridge(options)`; behaviour in *Data model* and *API / interfaces*. It never fails: the error paths are exercised with stubs in tests.
 - `src/subscribers/recorder.ts` — new: `createRecorder(project)` wraps a projection `(fields) => state` into a subscriber that stores the projected state with `updatedAt` and exposes `getSnapshot()` / `subscribe(fn)` for the monitoring UI.
 - `src/subscribers/requestHeaders.ts`, `src/subscribers/analyticsCollector.ts`, `src/subscribers/gameConfig.ts` — new: the three projections of *Subscriber fields*.
 - `src/ui/ConsentBlock.tsx` — new: one component for both blocks (`variant: 'initial' | 'settings'`); two toggles, "Save", "Accept all", pending and error state.
@@ -130,12 +130,12 @@ interface ConsentRequest { marketing: ConsentStatus; analytics: ConsentStatus } 
 interface ConsentResponse { marketingTrackingId: string | null; analyticsTrackingId: string | null }
 ```
 
-Fake behaviour, `createFakeIdentityBridge({ consentRequired, delayMs = [300, 1000], errorRate = 0.1, random = Math.random, storage = localStorage })`:
+Fake behaviour, `createFakeIdentityBridge({ consentRequired, delayMs = [300, 1000], random = Math.random, storage = localStorage })`:
 
-- Every call waits a random `delayMs`. `updateConsent` then fails with probability `errorRate` (`Error("Fake bridge error")`) before touching storage; `getConfig` never fails for now (PRD R11).
+- Every call waits a random `delayMs` and never fails (PRD R11).
 - `getConfig` with `consentRequired = true`: statuses and IDs from storage, or `NotDecided` / `null` when nothing is stored.
 - `getConfig` with `consentRequired = false`: both statuses `Accepted`; IDs from storage when present, otherwise issued and stored; stored statuses are ignored.
-- `updateConsent`, per field: `Accepted` with stored status `Accepted` → the same ID; `Accepted` otherwise → a new ID; `Declined` → `null`. Both statuses and both IDs are stored together after the error check, so a failing call changes nothing.
+- `updateConsent`, per field: `Accepted` with stored status `Accepted` → the same ID; `Accepted` otherwise → a new ID; `Declined` → `null`. Both statuses and both IDs are stored together.
 
 The `consentRequired` passed to the fake is the start panel's switch; the fake reads it from nowhere else.
 
@@ -149,11 +149,11 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 | R4 | `ConsentBlock` variant `settings`; off toggle + "Save" sends `Declined` | Visibility and UI behaviour |
 | R5 | One `updateConsent` call with both fields; "Accept all" sends both `Accepted` | Visibility and UI behaviour, API / interfaces |
 | R6 | ID rules in the fake `updateConsent` | API / interfaces, Data model |
-| R7 | The fake fails before storing; the service rethrows without `observer.set`; the block shows the error | Components & changes, Edge cases & error handling |
+| R7 | The service rethrows a rejected `updateConsent` without `observer.set`; the block shows the error (verified with a rejecting stub, the fake never fails) | Components & changes, Edge cases & error handling |
 | R8 | `identityObserver.set` calls subscribers on the first set and only when a field changed | Components & changes |
 | R9 | The three projections in *Subscriber fields* | Subscriber fields |
 | R10 | `ConfigBlock` on the observer and `MonitoringBlock` per recorder, re-rendered through `useSyncExternalStore` | Components & changes |
-| R11 | The fake with delay, `errorRate` and `localStorage` | API / interfaces |
+| R11 | The fake with delay and `localStorage` | API / interfaces |
 | R12 | `StartPanel` and the start handling in `App`: a new fake bridge and service per "Start" | Components & changes |
 
 ## Alternatives & decisions
@@ -164,7 +164,7 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 | Consent statuses after a save | From the response; from the request | From the request | The ticket says the consent method returns only the two tracking IDs; the status follows the request by definition |
 | Fake persistence | In memory only; `localStorage` | `localStorage` | The ticket requires the choice to survive a reload |
 | Switching `consentRequired` in the fake | Build-time constant; URL query `?consentRequired=false`; a switch on a debug start panel | Start panel switch, on by default | Testers switch modes and restart without a reload; the value still comes only from the config object |
-| Fake delay and error rate | Fixed values; options with defaults 300–1000 ms and 10% | Options with defaults; errors only in `updateConsent` | Tests run with zero delay and no errors; manual testing sees delays and failed saves, and a start that never fails (PRD R11) |
+| Fake delay and errors | Fixed delay; delay option with a 300–1000 ms default; simulated errors | Delay option, no simulated errors | Tests run with zero delay; manual testing sees delays only; the error paths are covered by tests with rejecting stubs (PRD R11) |
 | Dropping `deviceId` | In the observer; in each subscriber's projection | Projection | The ticket says the observer delivers all seven fields; the rule is about what subscribers write, and it differs per subscriber (headers always carry it) |
 | Header names | The ticket leaves them to the engineer | The `X-…` names in *Subscriber fields* | Conventional; confirmed with the backend before the real integration (Spec Q3) |
 
@@ -173,7 +173,7 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 - `start()` fails (the fake never fails here; the real bridge may) → the page shows "Could not load the config." and "Retry"; no subscriber is called; "Retry" starts again with the switch's current value.
 - "Start" pressed while a start is in flight → impossible, the button is disabled.
 - "Start" pressed again after a successful start → a new fake bridge and service; the observer gets the new config (a new `temporaryId` at least), so the subscribers are called; a failed restart leaves the previous state on the page and shows the error.
-- A save fails → the service rejects, the observer is untouched, the block shows the error and keeps the toggles as the user set them; "Save" and "Accept all" are enabled again.
+- A save fails (the fake never fails; the real bridge may) → the service rejects, the observer is untouched, the block shows the error and keeps the toggles as the user set them; "Save" and "Accept all" are enabled again.
 - A save that changes nothing (both already `Accepted`, both toggles on) → the fake returns the same IDs, `observer.set` sees no change, no subscriber is called, monitoring times stay.
 - Both consents `Declined`, both toggles off, "Save" → both stay `Declined` with `null` IDs; no change, no subscriber call.
 - A second click while a call is pending → impossible, the buttons are disabled.
@@ -190,10 +190,10 @@ The `consentRequired` passed to the fake is the start panel's switch; the fake r
 
 ## Testing plan
 
-- Unit (Vitest): `identityObserver` (first set calls, a changed field calls, an identical set doesn't, a late subscriber is called); `fakeIdentityBridge` (first start, `consentRequired = false`, the ID rules of R6, atomic failure, persistence through a fake storage); `identityService` (start and save paths, a failure leaves the observer untouched); the three projections (both `consentRequired` modes, `deviceId` always in the headers and only without `consentRequired` elsewhere, a `null` header dropped, `null` kept elsewhere).
+- Unit (Vitest): `identityObserver` (first set calls, a changed field calls, an identical set doesn't, a late subscriber is called); `fakeIdentityBridge` (first start, `consentRequired = false`, the ID rules of R6, persistence through a fake storage); `identityService` (start and save paths, a failure leaves the observer untouched); the three projections (both `consentRequired` modes, `deviceId` always in the headers and only without `consentRequired` elsewhere, a `null` header dropped, `null` kept elsewhere).
 - Component (Vitest + Testing Library): `ConsentBlock` (visibility per variant, an off toggle saves `Declined`, "Accept all", disabled while pending, error text with toggles kept; R3–R5, R7); `MonitoringBlock` (state and time update) and `ConfigBlock` (all seven fields, re-rendered on change; R10).
 - Component (Vitest + Testing Library): `App` (nothing but the start panel before "Start", start in both modes, restart in the other mode, failed start with "Retry"; R12).
-- Manual, in the browser, in both modes: the PRD acceptance criteria of R1–R11, including a failed save, a revoke-and-accept cycle and a reload.
+- Manual, in the browser, in both modes: the PRD acceptance criteria of R1–R12 except R7, including a revoke-and-accept cycle and a reload.
 
 ## Rollout & rollback
 

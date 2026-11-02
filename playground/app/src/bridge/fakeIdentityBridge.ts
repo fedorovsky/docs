@@ -11,10 +11,8 @@ export interface StorageLike {
 
 export interface FakeIdentityBridgeOptions {
   consentRequired: boolean;
-  /** [min, max] in milliseconds. */
+  /** [min, max] in milliseconds. The fake never fails: error handling is exercised with stubs in tests. */
   delayMs?: [number, number];
-  /** Probability in [0, 1] that updateConsent fails before touching storage. getConfig never fails for now. */
-  errorRate?: number;
   random?: () => number;
   storage?: StorageLike | null;
   newId?: () => string;
@@ -57,7 +55,6 @@ export function createFakeIdentityBridge(options: FakeIdentityBridgeOptions): Id
   const {
     consentRequired,
     delayMs = [300, 1000],
-    errorRate = 0.1,
     random = Math.random,
     newId = () => crypto.randomUUID(),
   } = options;
@@ -92,16 +89,15 @@ export function createFakeIdentityBridge(options: FakeIdentityBridgeOptions): Id
     }
   }
 
-  async function simulateBridge(mayFail: boolean): Promise<void> {
+  async function simulateDelay(): Promise<void> {
     const [min, max] = delayMs;
     const wait = min + (max - min) * random();
     if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
-    if (mayFail && random() < errorRate) throw new Error('Fake bridge error');
   }
 
   return {
     async getConfig() {
-      await simulateBridge(false);
+      await simulateDelay();
       let choice = read();
       if (!consentRequired) {
         choice = {
@@ -121,7 +117,7 @@ export function createFakeIdentityBridge(options: FakeIdentityBridgeOptions): Id
     },
 
     async updateConsent(request: ConsentRequest): Promise<ConsentResponse> {
-      await simulateBridge(true);
+      await simulateDelay();
       const stored = read();
       const next = (requested: ConsentStatus, storedStatus: ConsentStatus, storedId: string | null): string | null => {
         if (requested !== ConsentStatus.Accepted) return null;
