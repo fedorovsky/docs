@@ -18,7 +18,7 @@ links: []                # "Role: name — URL", e.g. "Jira: TRACK-12 — https:
 
 ## Summary
 
-<2–3 sentences: what we're building, for whom, and the outcome we expect.>
+<Two or three sentences: what we're building, for whom, and the outcome we expect.>
 
 ## Problem
 

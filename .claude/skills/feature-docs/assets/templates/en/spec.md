@@ -18,7 +18,7 @@ links: []                # "Role: name — URL", e.g. "Jira: TRACK-12 — https:
 
 ## Summary
 
-<2–3 sentences: what we're building technically and the shape of the solution. Link the PRD for the why.>
+<Two or three sentences: what we're building technically and the shape of the solution. Link the PRD for the why.>
 
 ## Context & current state
 

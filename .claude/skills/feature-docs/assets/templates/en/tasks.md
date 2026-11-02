@@ -21,7 +21,7 @@ links: []                # "Role: name — URL", e.g. "Jira: TRACK-12 — https:
 ## Tasks
 
 - [ ] **T1. <Short imperative title>**
-  - Covers: <R1, R2 — or one label: `setup`, `verify`, `rollout`>
+  - Covers: <R1, R2 — or exactly one label in backticks: setup, verify or rollout>
   - Files: <paths in backticks: path/to/file.ts, path/to/file.test.ts>
   - Change: <at most two sentences, pointing to the Spec section; more means split the task>
   - Done when: <a check anyone can run: tests that pass, behaviour to see>
@@ -32,4 +32,4 @@ links: []                # "Role: name — URL", e.g. "Jira: TRACK-12 — https:
   - Change: <…>
   - Done when: <…>
   - Depends on: <T1>
-  - Blocked by: <PRD Q1 — the open question that must be answered first; track any other blocker as an open question too>
+  - Blocked by: <PRD Q1 — the open question that must be answered first; track any other blocker as an open question too; omit the line when nothing blocks>

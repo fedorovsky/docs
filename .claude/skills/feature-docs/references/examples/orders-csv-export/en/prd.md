@@ -11,7 +11,7 @@ created: 2026-03-02
 updated: 2026-03-12
 spec: ./spec.md
 tasks: ./tasks.md
-links: ["Jira: SHOP-412"]
+links: ["Jira: SHOP-412", "Helpdesk: export requests report — https://helpdesk.example.com/reports/orders-export-requests", "Research: merchant interviews, Feb 2026 — https://wiki.example.com/research/merchant-interviews-2026-02"]
 ---
 
 # Orders CSV export — PRD
@@ -22,7 +22,7 @@ Merchants can download their orders as a CSV file from the Orders page, so they 
 
 ## Problem
 
-Merchants reconcile orders in spreadsheets or accounting software. Today the only way to get the data out is to ask support, who run a manual query. Support handled 140 such requests last quarter (≈ 9% of all tickets), with a median turnaround of 2 days. Merchants told us in interviews this delay blocks their month-end close.
+Merchants reconcile orders in spreadsheets or accounting software. Today the only way to get the data out is to ask support, who run a manual query. Support handled 140 such requests last quarter (≈ 9% of all tickets), with a median turnaround of 2 days ([helpdesk report](https://helpdesk.example.com/reports/orders-export-requests)). Merchants told us in [interviews](https://wiki.example.com/research/merchant-interviews-2026-02) this delay blocks their month-end close.
 
 ## Goals
 

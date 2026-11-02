@@ -68,4 +68,3 @@ Delivers the async CSV export from the [Spec](./spec.md). The Export button come
   - Change: deploy with the `order_exports` migration ahead of the code (Spec *Rollout & rollback*)
   - Done when: an internal store exports a `.csv` in production and the failure alert stays quiet for a week
   - Depends on: T7
-  - Blocked by: Spec Q1

@@ -1,6 +1,6 @@
 ---
 name: feature-docs
-description: Writes, updates and reviews feature documentation as three mirrored English/Russian documents per feature — a PRD (why and what), a technical Spec (how) and a task list (order of work) — and implements a feature task by task from that list. Use whenever the user wants to describe, plan, document or design a feature; asks for a PRD, requirements, spec, tech spec, design doc, RFC or implementation plan; wants to turn a ticket, notes or a conversation into feature docs; wants to break a spec into tasks or implement from it; or asks to review, audit, check or update existing PRD/spec/tasks files or a folder of feature docs, or to do the next task from such a list — even without the words "PRD" or "spec" (e.g. "let's write down what this feature should do", "audit the feature docs", "опиши фичу", "напиши ПРД", "сделай спеку", "разбей на задачи", "делай по задачам", "проведи аудит доков", "проверь доки", "обнови спеку", "следующая задача").
+description: Writes, updates and reviews feature documentation as three mirrored English/Russian documents per feature — a PRD (why and what), a technical Spec (how) and a task list (order of work) — and implements a feature task by task from that list. Use whenever the user wants to describe, plan, document or design a feature; asks for a PRD, requirements, spec, tech spec, design doc, RFC or implementation plan; wants to turn a ticket, notes or a conversation into feature docs; wants to break a spec into tasks or implement from it; or asks to review, audit, check or update existing PRD/spec/tasks files or a folder of feature docs, or to do the next task from such a list — even without the words "PRD" or "spec" (e.g. "let's write down what this feature should do", "audit the feature docs", "опиши фичу", "напиши ПРД", "сделай спеку", "разбей на задачи", "делай по задачам", "проведи аудит доков", "проверь доки", "обнови спеку", "следующая задача"). Not for READMEs, API reference, changelogs, ADRs, user guides or code comments, and not for implementing something that has no tasks.md yet.
 ---
 
 # Feature docs
@@ -27,20 +27,21 @@ Bundled files, relative to this skill's directory:
 
 - `assets/templates/{en,ru}/{prd,spec,tasks}.md`: the document structure.
 - `references/examples/orders-csv-export/`: a worked example. Read the `en/` set once for depth and tone, and `ru/` before writing a mirror.
-- `scripts/check_mirror.py`: structural EN/RU comparison (headings paired by template position, non-Mermaid code blocks byte-identical) plus checks on each file (headings are the template's, in its order, required sections present; `type`, dates and sibling links valid; every ID defined once, tasks in execution order, blockers naming a question, *Covers* labels, no template scaffolding) and across a feature's documents (every PRD requirement in the Spec's coverage table and, unless **Not covered:**, in some task's *Covers*; every "PRD Qn" / "Spec Qn" defined). Run it (Python 3, no packages); don't read it.
+- `scripts/check_mirror.py`: checks each file on its own (frontmatter complete and valid, headings the template's, IDs defined once, task fields, no scaffolding), each EN/RU pair structurally (headings paired by template position, lists, tables, code blocks byte-identical, Mermaid by node IDs and arrows) and each feature across its documents (every requirement in the Spec's coverage table and, unless **Not covered:**, in some task's *Covers*; every "PRD Qn" / "Spec Qn" defined). Run it (Python 3, no packages); don't read it.
+- `scripts/test_check_mirror.py`: the script's own regression cases, for whoever changes the script; not part of checking a feature.
 
 ## Workflow
 
 ### 1. Locate the docs
 
-The project is the codebase the feature belongs to; in a monorepo, the package or app. Check its `CLAUDE.md` and `README` for a docs location, then search for existing feature docs (`**/prd.md`, `**/spec.md`, `docs/features/`). An existing location and naming win over the default `docs/features/<feature-slug>/`. The `en/` + `ru/` mirror is not negotiable: docs found in one language, or flat in the feature folder, are moved into `en/` (or `ru/`) and mirrored when touched. Report any such move.
+The project is the codebase the feature belongs to; in a monorepo, the package or app. Check its `CLAUDE.md` and `README` for a docs location, then search for existing feature docs (`**/prd.md`, `**/spec.md`, `docs/features/`). An existing location and naming win over the default `docs/features/<feature-slug>/`. No docs folder yet means creating `docs/features/<feature-slug>/`. The `en/` + `ru/` mirror is not negotiable: docs found in one language, or flat in the feature folder, belong in `en/` (or `ru/`) with a mirror beside them. Moving someone's files is not a routine edit: say what would move where and ask before doing it, then `git mv` so history follows. A document that exists in Russian only keeps its text as the original; the English side is written as its translation with the same `created` and `updated`, and from then on the usual rule applies (English is the main document).
 
 ### 2. Identify the mode
 
 | Request | Do |
 |---|---|
 | New PRD | The usual start. |
-| New Spec | Read the PRD first. Without one, offer a short PRD; if declined, write the Spec with the problem and requirements in its *Context* section. |
+| New Spec | Read the PRD first. Without one, offer a short PRD; if declined, write the Spec without the `prd:` key, with the problem and a requirements table (`R1…`, same columns as the PRD's) under *Context & current state*; *Requirements coverage* and the tasks refer to those rows. |
 | Several at once | PRD, then Spec, then Tasks, each from the previous one, in one pass. No review stop between them unless asked. |
 | Tasks | Read the Spec and the PRD, then write `tasks.md` (see *Tasks*). No Spec means write the Spec first. A `draft` Spec means the tasks may change with it: say so. |
 | Implement | See *Working through tasks*. |
@@ -64,7 +65,7 @@ Never substitute a plausible value for a missing metric, baseline, date or owner
 
 ### 4. Write
 
-- Fill every frontmatter field: today's date for `created` and `updated`, `status: draft`. An unknown `owner` or `reviewers` is `TBD` / `[]`, never a guessed name, with one PRD open question covering all documents whose owner is unknown.
+- Fill every frontmatter field: today's date for `created` and `updated`, `status: draft`. A mirror written later copies `created` and `updated` from the original; the pair shares its dates. An unknown `owner` or `reviewers` is `TBD` / `[]`, never a guessed name, with one PRD open question covering all documents whose owner is unknown.
 - Drop *(optional)* sections that don't apply. A required section with nothing to say gets one line ("No new dependencies.") so reviewers know it was considered.
 - Remove all scaffolding: angle-bracket placeholders, guidance text, *(optional)* markers, frontmatter comments.
 - Size to the feature: a small feature's PRD fits one screen. Tables and short bullets over prose.
@@ -77,10 +78,10 @@ Never substitute a plausible value for a missing metric, baseline, date or owner
 From the project root:
 
 ```bash
-python3 <skill-dir>/scripts/check_mirror.py docs/features/<feature-slug>
+python3 <skill-dir>/scripts/check_mirror.py <path to the feature folder>
 ```
 
-Fix every mismatch. Without `python3`, say so and compare by hand against the *Bilingual mirror* rules. The script sees structure only, so also read both versions side by side for differences in meaning. Then go through the checklist.
+Pass the feature folder, or a folder of features, not the whole docs tree: the script reports what it ignored and exits 2 when it checked nothing. Fix every mismatch. Without `python3`, say so and compare by hand against the *Bilingual mirror* rules. The script sees structure only, so also read both versions side by side for differences in meaning. Then go through the checklist.
 
 The hand-over message names the files, the assumptions the draft rests on (listed apart from the open questions, so a reviewer knows what to check first), the open questions, every change made to a document the user didn't ask to change, and the next step: answers needed before review, or breaking a Spec into tasks.
 
@@ -88,7 +89,7 @@ The hand-over message names the files, the assumptions the draft rests on (liste
 
 ### IDs
 
-`R1…` requirements, `Q1…` open questions (numbered per document), `T1…` tasks. IDs are permanent: never renumber. A dropped item stays ~~struck through~~ with a reason; a new one takes the next free number. Refer to questions by document and number, "PRD Q3" / "Spec Q1", identically in Russian ("см. PRD Q3"). An answered question is ticked and keeps its line, with the answer after the owner: `— Jane Doe. Answered 2026-03-09: …` (Russian: `Ответ 2026-03-09: …`); dependent text is updated in the same edit.
+`R1…` requirements, `Q1…` open questions (numbered per document), `T1…` tasks. A task or question is defined by its bold header with the period, `**T1.**` / `**Q1.**`; without the period the script doesn't see it. IDs are permanent: never renumber. A dropped item stays ~~struck through~~ with a reason (the text, never the ID cell, so the row is still found); a new one takes the next free number. Refer to questions by document and number, "PRD Q3" / "Spec Q1", identically in Russian ("см. PRD Q3"). An answered question is ticked and keeps its line, with the answer after the owner: `— Jane Doe. Answered 2026-03-09: …` (Russian: `Ответ 2026-03-09: …`); dependent text is updated in the same edit: an `Assumption (PRD Qn): …` the answer confirms or replaces becomes a plain statement that keeps the `(PRD Qn)` reference, so a reader can still find why.
 
 A new item goes where it belongs in the order (a task where it runs, a requirement next to its neighbours), not at the end, so IDs may run out of file order. After inserting one, search the file for its ID: an edit that lands twice is how a duplicate appears, and the check script fails on it.
 
@@ -102,7 +103,7 @@ A new item goes where it belongs in the order (a task where it runs, a requireme
 
 - *Context & current state* describes the real code, with paths.
 - *Requirements coverage* lists every PRD requirement. A row the design meets only partly, or not at all, starts with **Partial:** or **Not covered:** (Russian: **Частично:** / **Не покрыто:**), says what's missing, and has a matching open question.
-- Where the PRD is silent or contradicts itself (a limit, a default, who sees what): take the most conservative option that breaks no other requirement, write it in the section it affects as `Assumption (PRD Q4): …` (Russian: `Допущение (PRD Q4): …`), and add that question to the PRD. If every option breaks some requirement, the requirement it breaks is marked **Partial:** in *Requirements coverage*, citing the same question. The Spec's own open questions are technical, plus questions about the Spec or `tasks.md` themselves; `tasks.md` has no open-questions section.
+- Where the PRD is silent or contradicts itself (a limit, a default, who sees what): take the most conservative option that breaks no other requirement, write it in the section it affects as `Assumption (PRD Q4): …` (Russian: `Допущение (PRD Q4): …`), and add that question to the PRD. If every option breaks some requirement, the requirement it breaks is marked **Partial:** in *Requirements coverage*, citing the same question. The Spec's own open questions are technical, plus questions about the Spec or `tasks.md` themselves; `tasks.md` has no open-questions section. A technical value the Spec needs but can't settle gets the same treatment with its own question, `Assumption (Spec Qn): …`, so the work isn't blocked on it.
 - *Alternatives & decisions* records each non-obvious choice: options, choice, reason. A decision spanning several features may deserve an ADR; suggest it, don't create it.
 - Edge cases, testing plan, and rollout with rollback are always present.
 - The release is the rollout: order it so it is safe (migrations backward compatible and ahead of the code), and roll back by redeploying the previous version.
@@ -111,12 +112,12 @@ A new item goes where it belongs in the order (a task where it runs, a requireme
 
 One checkbox per task, fields underneath, in execution order:
 
-- **Covers**: requirement IDs, or one label: `setup` (scaffolding, config, tests, schema), `verify` (checks on a real environment), `rollout`. Every requirement the Spec covers appears in at least one task.
+- **Covers**: exactly one line per task: requirement IDs, or one label, never both: `setup` (scaffolding, config, test infrastructure, schema), `verify` (checks on a real environment), `rollout`. Every requirement the Spec covers appears in at least one task. A dropped task stays ~~struck through~~ with the reason and keeps no fields.
 - **Files**: real paths from the Spec and the code; for things outside the repo, the place.
 - **Change**: at most two sentences, citing the Spec section. Longer, or more than about five files, means the task is too big: split it.
 - **Done when**: a check anyone can run. Tests belong to the task, not to a final "write tests" task; for `setup`, a passing build or test run is enough.
 - **Depends on**: earlier task IDs.
-- **Blocked by**: the open question that must be answered first. Every blocker, including mockups, another team or an access request, is tracked as an open question (PRD for product and design, Spec for technical). An assumption the Spec already makes doesn't block; block only when no sensible assumption exists or a different answer would mean redoing the task.
+- **Blocked by**: the open question that must be answered first; omit the line when nothing blocks. Every blocker, including mockups, another team or an access request, is tracked as an open question (PRD for product and design, Spec for technical). An assumption the Spec already makes doesn't block; block only when no sensible assumption exists or a different answer would mean redoing the task.
 
 Each task is reviewable alone, about one small PR, and leaves the app building and working, with nothing half-built reachable: build the internals first and add the entry point (route, button, menu item) in the last task the flow needs. Missing mockups or final UI text don't block UI tasks: build with provisional text and add one late task for the final design, blocked by the design question.
 
@@ -142,10 +143,10 @@ When all tasks are ticked, re-read the Spec against the code: *Context & current
 
 English is the main document (`en/`, `lang: en`). Russian (`ru/`, `lang: ru`) is a mirror for convenient reading: it never adds, decides or drops anything, and when the two disagree in meaning, English is right unless the Russian side holds a newer edit (see *Out-of-sync pair* below). A reader of either version learns exactly the same things:
 
-- **Structure**: same headings in the same order, using the Russian template's headings verbatim; same table rows, list items and checkbox states.
+- **Structure**: H1, H2 and the template's H3 are the template's, verbatim and in its order, in each language; subsections below that are free and pair up by position; same table rows, list items and checkbox states.
 - **Facts**: every number, date, name, status, priority and decision on both sides. No clarification, example or caveat on one side only.
-- **Untranslated**: IDs, priorities and task labels; anything in backticks; fenced code blocks except Mermaid, byte-identical with comments; frontmatter keys and values except `title`; people's names; UI text (screen names, labels, messages, empty states), quoted as the product shows or will show it. When the UI language isn't settled, UI text is English in both versions, including labels a source quotes in another language: «Сохранить» becomes "Save", and the final copy is a design question.
-- **Diagrams**: identical node IDs, participants and arrows. A label that contains code (a call, identifier, field or value, such as `init(fields)`) stays byte-identical; only labels in plain words are translated.
+- **Untranslated**: IDs, priorities and task labels; anything in backticks; fenced code blocks except Mermaid, byte-identical with comments; people's names; UI text (screen names, labels, messages, empty states), quoted as the product shows or will show it. When the UI language isn't settled, UI text is English in both versions, including labels a source quotes in another language: «Сохранить» becomes "Save", and the final copy is a design question.
+- **Diagrams**: identical node IDs, participants and arrows. The code inside a label (a call, identifier, field or value, such as `init(fields)` or `orders-<id>.csv`) stays byte-identical; the words around it are translated.
 - **Links**: identical, relative to the language folder.
 - **Frontmatter**: identical except `title`, `lang`, `mirror`; `status` and `updated` change together.
 
@@ -187,7 +188,7 @@ Add one when prose can't explain it quickly: three or more parties, or non-trivi
 - [ ] No goal or requirement redefined.
 
 **Tasks**
-- [ ] Every covered requirement appears in some *Covers*; labels are `setup` / `verify` / `rollout` only.
+- [ ] Every task has exactly one *Covers*: requirement IDs or one label (`setup` / `verify` / `rollout`), never both; every covered requirement appears in some *Covers*.
 - [ ] Real *Files*, *Change* ≤ 2 sentences, runnable *Done when*; nothing beyond the Spec.
 - [ ] The entry point comes in the last task its flow needs; nothing half-built is reachable.
 - [ ] Every task ID is defined once and tasks are in execution order: *Depends on* points to a task above; every *Blocked by* names a question.

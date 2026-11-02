@@ -24,7 +24,7 @@ Add an async export job: the Orders page sends its current filters to a new endp
 
 - The Orders list is served by `GET /api/orders` (`api/orders/list.ts`), paginated at 50 rows, filters in `OrdersFilter` (`api/orders/filter.ts`).
 - Background jobs already run on the `jobs` queue (`workers/queue.ts`); there's an existing email-sending job we can reuse.
-- Large stores have up to ~80k orders per year, so a synchronous response would exceed the 30s gateway timeout.
+- Large stores have up to ~80k orders per year (`orders` row count per merchant, March 2026), so a synchronous response would exceed the 30s gateway timeout.
 
 ## Proposed design
 
@@ -78,6 +78,7 @@ New table `order_exports`: `id`, `merchant_id`, `filters` (jsonb), `status` (`pe
 
 - Zero matching orders → CSV with header row only; UI shows "No orders match your filters".
 - Job fails → status `failed`, UI shows retry button; error logged with `exportId`.
+- Exported file lifetime → Assumption (Spec Q1): deleted after 24h, together with the link's expiry; keeping files for 7 days is security's call and changes only a cleanup setting.
 - Merchant starts a second export while one is running → allowed. Assumption (PRD Q2): at most 3 concurrent per merchant, the smallest limit that still lets a merchant export several filtered views; otherwise `429`.
 
 ## Testing plan
