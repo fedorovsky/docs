@@ -43,14 +43,11 @@ Identity-поля — все семь полей конфига. Обсерве�
 
 Подписчики пока фейковые, просто запоминают, что пришло:
 
-1. Хедеры запросов к бэкенду: хедер с `null` убирается, имена придумать.
+1. Хедеры запросов к бэкенду: дополнительно `consentRequired`, хедер с `null` убирается, имена придумать.
 2. Коллектор аналитики: `null` пишется как есть.
 3. Гейм-конфиг: `null` пишется как есть.
 
-Что именно пишут все три подписчика, зависит от `consentRequired`:
-
-- `false`: оба tracking ID, `temporaryId` и `deviceId`.
-- `true`: оба tracking ID, `temporaryId`, `marketingConsentStatus` и `analyticsConsentStatus`. `deviceId` писать нельзя.
+Все три пишут оба tracking ID и `temporaryId`. При `consentRequired = false` к ним добавляется `deviceId`, при `true` вместо него `marketingConsentStatus` и `analyticsConsentStatus`; `deviceId` при `true` писать нельзя.
 
 ## Мониторинг (отладка, потом уберём)
 
