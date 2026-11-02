@@ -53,9 +53,14 @@ Sources, in order: the conversation, tickets and notes, existing docs, the code.
 
 Check the sources for contradictions: two statements that can't both hold, or a value stated differently in two places. Each one becomes a PRD open question that quotes both statements; the Spec picks one reading as an assumption citing that question (see *Spec*). Never resolve a contradiction silently.
 
-Ask once, before drafting: one batch, most important first, only questions whose answers change the content. Typical PRD gaps: who has the problem, the evidence, success in numbers, what is out of scope.
+Sort what is still unknown by the cost of guessing wrong:
 
-Unanswered questions never block the draft. Write the docs and record each one under *Open questions* with who should answer it. Never substitute a plausible value for a missing metric, baseline, date or owner: a visible gap gets resolved, a fabricated number gets shipped. Keep dates as the source states them ("next quarter") unless the conversion is unambiguous.
+- **Blocking**: a wrong guess means rewriting the document. Who has the problem and the evidence, where the scope ends, a contradiction between sources, whether the feature is wanted at all. Usually one to four per feature.
+- **Fill-in**: metrics, baselines, dates, owners, limits, defaults. A wrong guess changes a value, not the document. Never ask these: record each under *Open questions* with who should answer it, and let the Spec make a conservative assumption where it needs a value (see *Spec*).
+
+Ask the blocking questions once, before drafting, and wait for the answer: one batch through AskUserQuestion, most important first, each with the answer you would assume and why ("Who is the user? Assuming support operators: the ticket refers to their queue"), so that a reply can be one word. End the turn there; the draft starts after the answer. Skip the batch and draft on assumptions only when the user said to just write, handed over a ticket and left, has already said they don't know, or asked not to be asked: then each blocking question goes under *Open questions* too, with the assumption made.
+
+Never substitute a plausible value for a missing metric, baseline, date or owner: a visible gap gets resolved, a fabricated number gets shipped. Keep dates as the source states them ("next quarter") unless the conversion is unambiguous.
 
 ### 4. Write
 
@@ -76,7 +81,7 @@ python3 <skill-dir>/scripts/check_mirror.py docs/features/<feature-slug>
 
 Fix every mismatch. Without `python3`, say so and compare by hand against the *Bilingual mirror* rules. The script sees structure only, so also read both versions side by side for differences in meaning. Then go through the checklist.
 
-The hand-over message names the files, the open questions, every change made to a document the user didn't ask to change, and the next step: answers needed before review, or breaking a Spec into tasks.
+The hand-over message names the files, the assumptions the draft rests on (listed apart from the open questions, so a reviewer knows what to check first), the open questions, every change made to a document the user didn't ask to change, and the next step: answers needed before review, or breaking a Spec into tasks.
 
 ## Document rules
 
@@ -191,6 +196,7 @@ Add one when prose can't explain it quickly: three or more parties, or non-trivi
 **All**
 - [ ] Frontmatter complete (`TBD` for unknowns); sibling and mirror links correct.
 - [ ] Open questions numbered and referenced as "PRD Qn"; everything unresolved listed, with an owner where known.
+- [ ] Blocking questions were asked before drafting, or the hand-over says why they were skipped and lists the assumptions made instead.
 - [ ] No scaffolding left.
 - [ ] Mermaid syntax valid; names match the text.
 - [ ] `check_mirror.py` passes; a side-by-side read finds no difference in meaning.
