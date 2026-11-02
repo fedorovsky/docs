@@ -5,7 +5,7 @@ feature: identity-tracking-consent
 lang: en
 mirror: ../ru/tasks.md
 status: draft
-owner: TBD
+owner: a.fedorovskyi
 created: 2026-11-02
 updated: 2026-11-02
 prd: ./prd.md
@@ -85,19 +85,13 @@ Delivers the identity flow of the [Spec](./spec.md): scaffold, fake API, observe
   - Change: the headers projection adds `X-Device-Id` in both `consentRequired` modes (Spec *Subscriber fields*)
   - Done when: tests show `X-Device-Id` with `consentRequired = true` and the other two projections still without `deviceId`
   - Depends on: T5
-- [ ] **T10. Apply the final design and copy**
-  - Covers: R3, R4, R10
-  - Files: `src/ui/ConsentBlock.tsx`, `src/ui/MonitoringBlock.tsx`, `src/App.tsx`
-  - Change: replace the provisional layout and English text with the final design (Spec *Visibility and UI behaviour*)
-  - Done when: the blocks match the mockups and the agreed copy; the T6–T8 tests still pass
-  - Depends on: T9
-  - Blocked by: PRD Q4
+- [ ] ~~**T10. Apply the final design and copy**~~ Dropped 2026-11-02: no mockups or localisation for now (PRD Q4)
 - [ ] **T11. Release**
   - Covers: `rollout`
   - Files: deploy pipeline (Spec Q2)
   - Change: deploy the app build (Spec *Rollout & rollback*)
   - Done when: the deployed app passes the T9 walkthrough in both modes
-  - Depends on: T10
+  - Depends on: T9
   - Blocked by: Spec Q2
 - [x] **T12. Add the config block**
   - Covers: R10

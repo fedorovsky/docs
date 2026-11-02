@@ -5,7 +5,7 @@ feature: identity-tracking-consent
 lang: ru
 mirror: ../en/spec.md
 status: draft
-owner: TBD
+owner: a.fedorovskyi
 reviewers: []
 created: 2026-11-02
 updated: 2026-11-02
@@ -85,10 +85,10 @@ sequenceDiagram
 #### Видимость и поведение UI
 
 - Стартовый блок: `consentRequired === true` и хотя бы один статус `NotDecided`. Блок настроек: `consentRequired === true`. До нажатия "Start", а также пока первый `start()` выполняется или упал, показывается только панель старта.
-- Переключатель включён при `Accepted` и выключен при `Declined`. **Допущение (PRD Q2):** `NotDecided` показывается как выключенный.
+- Переключатель включён при `Accepted` и выключен при `Declined`; `NotDecided` показывается как выключенный (PRD Q2).
 - "Save" отправляет `{ marketing: on ? Accepted : Declined, analytics: … }`; "Accept all" отправляет оба как `Accepted` независимо от переключателей. Оба блока читают статусы из обсервера, поэтому сохранение в одном обновляет другой. После успешного сохранения переключатели выставляются по отправленному запросу, поэтому "Accept all" или сохранение после упавшего не рассинхронизирует их со статусом, который не изменился.
-- **Допущение (PRD Q3):** пока вызов выполняется, обе кнопки отключены; при ошибке блок показывает "Could not save your choice. Try again." под кнопками и оставляет переключатели как их выставил пользователь; упавший `start()` показывает "Could not load the config." с кнопкой "Retry", которая снова вызывает `start()`.
-- **Допущение (PRD Q4):** временные английские тексты: заголовки блоков "Tracking consent" и "Tracking settings", подписи переключателей "Marketing" и "Analytics", кнопки "Save" и "Accept all", заголовки мониторинга "Config", "Request headers", "Analytics collector" и "Game config". Поздняя задача заменяет их окончательным дизайном.
+- Пока вызов выполняется, обе кнопки отключены. Обработка ошибок пока не требуется (PRD Q3); сделанное остаётся заглушкой: при ошибке блок показывает "Could not save your choice. Try again." под кнопками и оставляет переключатели как их выставил пользователь, а упавший `start()` показывает "Could not load the config." с кнопкой "Retry", которая снова вызывает `start()`.
+- Макеты и локализация пока не нужны (PRD Q4); английские тексты идут как есть: заголовки блоков "Tracking consent" и "Tracking settings", подписи переключателей "Marketing" и "Analytics", кнопки "Save" и "Accept all", заголовки мониторинга "Config", "Request headers", "Analytics collector" и "Game config".
 
 ### Модель данных
 

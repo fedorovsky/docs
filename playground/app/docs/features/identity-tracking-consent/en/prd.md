@@ -5,7 +5,7 @@ feature: identity-tracking-consent
 lang: en
 mirror: ../ru/prd.md
 status: draft
-owner: TBD
+owner: a.fedorovskyi
 reviewers: []
 created: 2026-11-02
 updated: 2026-11-02
@@ -75,7 +75,7 @@ flowchart TD
 | R4 | Settings consent block: shown whenever `consentRequired = true`; the user revokes a consent here by switching its toggle off and saving | Must | Switch marketing off and press "Save": marketing becomes Declined and its tracking ID `null`; analytics is unchanged |
 | R5 | Saving sends both choices in one call, as the toggles stand: on = Accepted, off = Declined; "Accept all" saves both as Accepted; the two consents are independent | Must | Save with marketing on and analytics off: statuses Accepted and Declined; "Accept all" with both toggles off: both Accepted |
 | R6 | Tracking ID rules: Accepted → Accepted keeps the ID; Declined or NotDecided → Accepted issues a new ID, the old one never returns; Declined → `null` | Must | Accept, revoke, accept again: the third ID differs from the first; accept twice in a row: the same ID |
-| R7 | A failed consent call changes nothing: statuses and IDs stay as they were, the user sees an error and can retry | Must | With a bridge stub that rejects the call (the simulation never fails): statuses, IDs and monitoring blocks unchanged, an error is shown, the next "Save" works |
+| R7 | A failed consent call changes nothing: statuses and IDs stay as they were. Showing the error to the user is not required for now (Q3) | Must | With a bridge stub that rejects the call (the simulation never fails): statuses, IDs and monitoring blocks unchanged, the next "Save" works |
 | R8 | Every consumer of identity receives all seven identity fields at start and after every change, without a reload; nothing is delivered when no field changed | Must | Monitoring update times change after start and after a save that changed something; a save that changes nothing (Accepted → Accepted for both) leaves them as they were |
 | R9 | Three consumers record what they receive: all three record both tracking IDs and `temporaryId`; with `consentRequired = true` also both consent statuses. The analytics collector and the game config record `deviceId` only with `consentRequired = false` and keep `null` as is. Request headers always carry `deviceId` and `consentRequired` (clarified by the product owner on 2026-11-02; the ticket forbade `deviceId` for all three) and drop any header whose value is `null` | Must | With `consentRequired = true`: no `deviceId` in the analytics and game-config blocks, `deviceId` present in the headers block; the headers block has no header for a `null` ID; the analytics and game-config blocks show `null` |
 | R10 | Debug monitoring: a config block at the top of the page showing the seven identity fields the app currently holds, and three blocks next to the settings block, one per consumer, showing its current recorded state and the time of the last update | Must | After start the config block shows all seven fields; after each change the config block and the three consumer blocks show the new fields (and a new time) immediately, without a reload |
@@ -91,15 +91,15 @@ flowchart TD
 ## Risks & dependencies
 
 - Native app team: the real bridge methods for config and consent are in progress; the agreed contract isn't attached to the ticket (Spec Q1). The simulation follows the ticket's field names.
-- Design: no mockups for the consent or monitoring blocks (Q4).
+- Design: no mockups or localisation for now, by decision (Q4); the provisional English copy ships.
 - Legal: the driver for the consent requirement is not stated (Q5).
 
 ## Open questions
 
-- [ ] **Q1.** Who owns and reviews the PRD, the Spec and the tasks? — product (ticket author)
-- [ ] **Q2.** How does a toggle show a NotDecided status, given it only has on and off? The Spec assumes off. — product / design
-- [ ] **Q3.** What does the user see while a call is in flight, and when loading the config or saving fails? The Spec assumes disabled buttons while pending, an English error text and a retry. — product / design
-- [ ] **Q4.** Final layout and copy of the consent and monitoring blocks, and the UI language: the ticket quotes the buttons in Russian, the docs use provisional English text. — design
+- [x] **Q1.** Who owns and reviews the PRD, the Spec and the tasks? — product (ticket author). Answered 2026-11-02: owner a.fedorovskyi for all three documents; no reviewers named yet.
+- [x] **Q2.** How does a toggle show a NotDecided status, given it only has on and off? The Spec assumes off. — product / design. Answered 2026-11-02: as off.
+- [x] **Q3.** What does the user see while a call is in flight, and when loading the config or saving fails? The Spec assumes disabled buttons while pending, an English error text and a retry. — product / design. Answered 2026-11-02: error handling is not needed for now; what is built stays as a placeholder until the real bridge.
+- [x] **Q4.** Final layout and copy of the consent and monitoring blocks, and the UI language: the ticket quotes the buttons in Russian, the docs use provisional English text. — design. Answered 2026-11-02: no mockups or localisation for now; the provisional English copy stays.
 - [ ] **Q5.** What drives the consent requirement (law, platform policy, partner), and which users does it affect? — product
 - [ ] **Q6.** Which success metric, target and measurement source apply? The app has no analytics events. — product
 - [ ] **Q7.** When and under which ticket are the monitoring blocks and the start panel removed? — product
