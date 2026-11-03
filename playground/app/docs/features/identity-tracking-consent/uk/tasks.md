@@ -36,7 +36,7 @@ links: ["Jira: TRACK-12"]
   - Покриває: R1, R2, R6, R11
   - Файли: `src/bridge/identityBridge.ts`, `src/bridge/fakeIdentityBridge.ts`, `src/bridge/fakeIdentityBridge.test.ts`
   - Що зробити: `IdentityBridge` і `createFakeIdentityBridge` із затримкою, сховищем і правилами ID; він ніколи не падає (розділ специфікації «API / інтерфейси»)
-  - Готово, коли: тести покривають перший старт в обох режимах `consentRequired`, той самий ID на Accepted → Accepted, новий ID після Declined або NotDecided, `null` на Declined, перехід на пам’ять, коли сховище не читається та новий `temporaryId` на кожен виклик
+  - Готово, коли: тести покривають перший старт в обох режимах `consentRequired`, той самий ID на Accepted → Accepted, новий ID після Declined або NotDecided, `null` на Declined, перехід на пам’ять, коли сховище не читається, та новий `temporaryId` на кожен виклик
   - Залежить від: T2
 - [x] **T4. Реалізувати сервіс identity**
   - Покриває: R7, R8
