@@ -37,13 +37,13 @@ Bundled files, relative to this skill's directory:
 
 ### 1. Locate the docs
 
-The project is the codebase the feature belongs to; in a monorepo, the package or app. Check its `CLAUDE.md` and `README` for a docs location, then search for existing feature docs (`**/prd.md`, `**/spec.md`, `docs/features/`). An existing location and naming win over the default `docs/features/<feature-slug>/`. No docs folder yet means creating `docs/features/<feature-slug>/`. The `en/` + `uk/` mirror is not negotiable: docs found in one language, or flat in the feature folder, belong in `en/` (or `uk/`) with a mirror beside them. Moving someone's files is not a routine edit: say what would move where and ask before doing it, then `git mv` so history follows. A document that exists in Ukrainian only keeps its text as the original; the English side is written as its translation with the same `created` and `updated`, and from then on the usual rule applies (English is the main document).
+The project is the codebase the feature belongs to; in a monorepo, the package or app. Check its `CLAUDE.md` and `README` for a docs location, then search for existing feature docs (`**/prd.md`, `**/spec.md`, `docs/features/`). An existing location and naming win over the default `docs/features/<feature-slug>/`. No docs folder yet means creating `docs/features/<feature-slug>/`. The `en/` + `uk/` mirror is not negotiable: docs found in one language, or flat in the feature folder, belong in `en/` (or `uk/`) with a mirror beside them. Moving someone's files is not a routine edit: say what would move where and ask before doing it, then `git mv` so history follows. Restructuring one is no more routine: a document found with other headings gets the template's (the check script accepts nothing else), but only after saying what would change and asking. A document that exists in Ukrainian only keeps its text as the original; the English side is written as its translation with the same `created` and `updated`, and from then on the usual rule applies (English is the main document).
 
 ### 2. Identify the mode
 
 | Request | Do |
 |---|---|
-| New PRD | The usual start. |
+| New PRD | The usual start, and what a request that names no document means ("describe the feature"): the Spec and the tasks are offered in the hand-over, not written unasked. |
 | New Spec | Read the PRD first. Without one, offer a short PRD; if declined, write the Spec without the `prd:` key, with the problem and a requirements table (`R1…`, same columns as the PRD's) under *Context & current state*; *Requirements coverage* and the tasks refer to those rows. |
 | Several at once | PRD, then Spec, then Tasks, each from the previous one, in one pass. No review stop between them unless asked. |
 | Tasks | Read the Spec and the PRD, then write `tasks.md` (see *Tasks*). No Spec means write the Spec first. A `draft` Spec means the tasks may change with it: say so. |
@@ -53,7 +53,7 @@ The project is the codebase the feature belongs to; in a monorepo, the package o
 
 ### 3. Gather facts; invent nothing
 
-Sources, in order: the conversation, tickets and notes, existing docs, the code. Read the relevant code before asking anything: a permission the backend doesn't check, or a search that can't do what the ticket assumes, is a product question that surfaces only there. A Spec is grounded in real modules, files, tables and endpoints.
+Sources, in order: the conversation, tickets and notes, existing docs, the code. A ticket key, a Confluence page, a Figma file or a PR that a connector or CLI can open is read in the same pass, before any question about it; one that can't be opened is asked for as a paste, never guessed at. Read the relevant code before asking anything: a permission the backend doesn't check, or a search that can't do what the ticket assumes, is a product question that surfaces only there. A Spec is grounded in real modules, files, tables and endpoints.
 
 Check the sources for contradictions: two statements that can't both hold, or a value stated differently in two places. Each one becomes a PRD open question that quotes both statements; the Spec picks one reading as an assumption citing that question (see *Spec*). Never resolve a contradiction silently.
 
@@ -92,7 +92,7 @@ The hand-over message names the files, the assumptions the draft rests on (liste
 
 ### IDs
 
-`R1…` requirements, `Q1…` open questions (numbered per document), `T1…` tasks. A task or question is defined by its bold header with the period, `**T1.**` / `**Q1.**`; without the period the script doesn't see it. IDs are permanent: never renumber. A dropped item stays ~~struck through~~ with a reason (the text, never the ID cell, so the row is still found); a new one takes the next free number. Refer to questions by document and number, "PRD Q3" / "Spec Q1", identically in Ukrainian ("див. PRD Q3"). An answered question is ticked and keeps its line, with the answer after the owner: `— Jane Doe. Answered 2026-03-09: …` (Ukrainian: `Відповідь 2026-03-09: …`); dependent text is updated in the same edit: an `Assumption (PRD Qn): …` the answer confirms or replaces becomes a plain statement that keeps the `(PRD Qn)` reference, so a reader can still find why.
+`R1…` requirements, `Q1…` open questions (numbered per document), `T1…` tasks. A task or question is defined by its bold header with the period, `**T1.**` / `**Q1.**`; without the period the script doesn't see it. IDs are permanent: never renumber. A dropped item stays ~~struck through~~ with a reason (the text, never the ID cell, so the row is still found); a new one takes the next free number. Refer to questions by document and number, "PRD Q3" / "Spec Q1", identically in Ukrainian ("див. PRD Q3"). An answered question is ticked and keeps its line, with the answer after the owner: `— Jane Doe. Answered 2026-03-09: …` (Ukrainian: `Відповідь 2026-03-09: …`); dependent text is updated in the same edit: an `Assumption (PRD Qn): …` the answer confirms or replaces becomes a plain statement that keeps the `(PRD Qn)` reference, so a reader can still find why. A requirement, like every other statement, says only what is true now: what it said before, who changed it and when belong to the answered question (or the struck row's reason), so a clarification received in conversation is recorded as a question answered that day, not as history inside the requirement or the summary.
 
 A new item goes where it belongs in the order (a task where it runs, a requirement next to its neighbours), not at the end, so IDs may run out of file order. After inserting one, search the file for its ID: an edit that lands twice is how a duplicate appears, and the check script fails on it.
 
@@ -105,7 +105,7 @@ A new item goes where it belongs in the order (a task where it runs, a requireme
 ### Spec
 
 - *Context & current state* describes the real code, with paths.
-- *Requirements coverage* lists every PRD requirement. A row the design meets only partly, or not at all, starts with **Partial:** or **Not covered:** (Ukrainian: **Частково:** / **Не покрито:**), says what's missing, and has a matching open question.
+- *Requirements coverage* lists every PRD requirement, dropped ones included (`Dropped in PRD`). A row the design meets only partly, or not at all, starts with **Partial:** or **Not covered:** (Ukrainian: **Частково:** / **Не покрито:**), says what's missing, and has a matching open question.
 - Where the PRD is silent or contradicts itself (a limit, a default, who sees what): take the most conservative option that breaks no other requirement, write it in the section it affects as `Assumption (PRD Q4): …` (Ukrainian: `Припущення (PRD Q4): …`), and add that question to the PRD. If every option breaks some requirement, the requirement it breaks is marked **Partial:** in *Requirements coverage*, citing the same question. The Spec's own open questions are technical, plus questions about the Spec or `tasks.md` themselves; `tasks.md` has no open-questions section. A technical value the Spec needs but can't settle gets the same treatment with its own question, `Assumption (Spec Qn): …`, so the work isn't blocked on it.
 - *Alternatives & decisions* records each non-obvious choice: options, choice, reason. A decision spanning several features may deserve an ADR; suggest it, don't create it.
 - Edge cases, testing plan, and rollout with rollback are always present.
