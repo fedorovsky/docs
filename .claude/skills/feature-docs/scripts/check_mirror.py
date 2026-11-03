@@ -14,34 +14,47 @@ check fails or a mirror is missing, 2 nothing was checked.
 
 Each file is checked on its own, mirror or not:
 - frontmatter: present, every key of its template filled, `type` matches the
-  file name, `lang` matches the folder, `status` one of draft / review /
-  approved / shipped / deprecated, `created` and `updated` real dates with
-  `updated` no earlier, `prd:` / `spec:` / `tasks:` naming files that exist,
-  `mirror:` pointing at the twin;
-- headings: H1 ends with the template's suffix; every H2 and every template H3
-  is the template's, in the template's order, no required section missing;
-  deeper subsections are free;
+  file name, `lang` the folder and `feature` the feature folder, `status` one
+  of draft / review / approved / shipped / deprecated, `created` and `updated`
+  real dates with `updated` no earlier, `prd:` / `spec:` / `tasks:` naming
+  files that exist (the template's `./spec.md` may still be unwritten),
+  `mirror:` pointing at the twin, every `links:` entry of the form
+  "Role: name — URL";
+- headings: H1 is `<title> — <suffix>` with the frontmatter's title; every H2
+  and every template H3 is the template's, in the template's order, no
+  required section missing; deeper subsections are free;
 - IDs: every T / Q header (`**T1.**`) and every R row in the requirements table
-  defined once; a bold ID without the period is reported;
-- tasks: each has exactly one "Covers" (R IDs, or one label setup / verify /
-  rollout, never both), "Depends on" names tasks above it, "Blocked by" names a
-  question as "PRD Qn" / "Spec Qn" or is "—";
-- no template scaffolding: <placeholders>, *(optional)* markers, YYYY-MM-DD,
-  frontmatter comments.
+  defined once; a bold ID without the period is reported; a ticked question
+  carries its answer ("Answered YYYY-MM-DD:");
+- requirements (the PRD's table, or the Spec's Context table without a PRD):
+  a live row has a Must / Should / Could priority and acceptance criteria, and
+  a table of three or more is not all Must;
+- coverage (Spec): a "Partial:" / "Not covered:" row names a question;
+- tasks: each has one Covers (R IDs, or one label setup / verify / rollout,
+  never both), Files, Change, Done when and Depends on; "Depends on" names
+  tasks above it, and a ticked task depends on ticked tasks only; "Blocked by"
+  names a question as "PRD Qn" / "Spec Qn" or is "—"; a dropped task keeps no
+  fields;
+- no bare URL in the body (a source is cited as [text](URL) and listed in
+  links:), every Mermaid block starts with a diagram type, and no template
+  scaffolding: <placeholders>, *(optional)* markers, YYYY-MM-DD, frontmatter
+  comments.
 
 An EN/UK pair is compared structurally, since prose differs by language:
 frontmatter (except title / lang / mirror), heading levels with sections paired
 by their position in the templates (Summary <-> Коротко), per section the list
 items, checkbox states, table shapes and fenced blocks (byte-identical, except
 Mermaid, where node IDs, participants and arrows are compared and labels are
-ignored), and over the whole file the R/T/Q IDs, inline code and links.
+ignored), and over the whole file the R/T/Q IDs, inline code and links
+(in-page anchors by count only, since they point at translated headings).
 Meaning still has to be checked by reading.
 
 A feature folder is checked across its documents, per language: every
 requirement (the PRD's table, or the Spec's *Context & current state* table
 when there is no PRD) is in the Spec's coverage table, every requirement that
-is neither struck through nor "Not covered:" is in some task's "Covers", and
-every "PRD Qn" / "Spec Qn" reference names a question that document defines.
+is neither struck through nor "Not covered:" is in some task's "Covers" and no
+task covers one that is, every "PRD Qn" / "Spec Qn" reference names a question
+that document defines, and no task is blocked by an answered question.
 """
 
 import datetime
@@ -63,6 +76,7 @@ DATE_PLACEHOLDER = "YYYY-MM-DD"
 COMMON_KEYS = ("type", "title", "feature", "lang", "mirror", "status", "owner", "reviewers", "created", "updated", "links")
 SIBLING_KEYS = {"prd": ("spec", "tasks"), "spec": ("prd", "tasks"), "tasks": ("prd", "spec")}
 LANG_SPECIFIC_KEYS = {"title", "lang", "mirror"}
+LIST_KEYS = {"reviewers", "links"}  # compared as lists, so a flow list and a block list with the same items are equal
 
 # Sections whose tables hold requirement rows (| R1 | …), in both languages.
 REQUIREMENT_SECTIONS = {"Requirements", "Вимоги"}
@@ -70,6 +84,13 @@ COVERAGE_SECTIONS = {"Requirements coverage", "Покриття вимог"}
 CONTEXT_SECTIONS = {"Context & current state", "Контекст і поточний стан"}  # a Spec without a PRD defines its requirements here
 DEFINITION_SECTIONS = {"prd": REQUIREMENT_SECTIONS, "spec": CONTEXT_SECTIONS, "tasks": set()}
 COVERS_LABELS = {"setup", "verify", "rollout"}
+PRIORITIES = ("Must", "Should", "Could")
+MERMAID_TYPES = (
+    "flowchart", "graph", "sequenceDiagram", "classDiagram", "stateDiagram-v2", "stateDiagram", "erDiagram", "journey",
+    "gantt", "pie", "quadrantChart", "requirementDiagram", "gitGraph", "mindmap", "timeline", "C4Context", "C4Container",
+    "C4Component", "C4Dynamic", "C4Deployment", "sankey-beta", "xychart-beta", "block-beta", "packet-beta", "kanban",
+    "architecture-beta", "zenuml",
+)
 
 FENCE_OPEN_RE = re.compile(r"^\s*(`{3,}|~{3,})\s*([\w-]*)")
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.*)")
@@ -84,14 +105,30 @@ LINK_RE = re.compile(r"\]\(([^)\s]+)")
 HEAD_PREFIX = r"^\s*(?:[-*+]\s+(?:\[[ xX]\]\s+)?)?~{0,2}\*\*"
 HEAD_DEF_RE = re.compile(HEAD_PREFIX + r"([TQ]\d+)\.")
 HEAD_NO_DOT_RE = re.compile(HEAD_PREFIX + r"([TQ]\d+)(?![\d.])")
-TASK_DEF_RE = re.compile(r"^\s*[-*+]\s+\[[ xX]\]\s+(~{0,2})\*\*(T\d+)\.")
+TASK_DEF_RE = re.compile(r"^\s*[-*+]\s+\[([ xX])\]\s+(~{0,2})\*\*(T\d+)\.")
 # A requirement row; the text may be struck through, the ID too.
 ROW_RE = re.compile(r"^\s*\|\s*~{0,2}(R\d+)~{0,2}\s*\|(.*)$")
-DEPENDS_RE = re.compile(r"^\s*[-*+]\s+(?:Depends on|Залежить від):\s*(.*)$")
-BLOCKED_RE = re.compile(r"^\s*[-*+]\s+(?:Blocked by|Заблоковано):\s*(.*)$")
-COVERS_RE = re.compile(r"^\s*[-*+]\s+(?:Covers|Покриває):\s*(.*)$")
+# The fields under a task, one line each in both languages; "Blocked by" only when a question blocks the task.
+TASK_FIELD_RES = {
+    "Covers": re.compile(r"^\s*[-*+]\s+(?:Covers|Покриває):\s*(.*)$"),
+    "Files": re.compile(r"^\s*[-*+]\s+(?:Files|Файли):\s*(.*)$"),
+    "Change": re.compile(r"^\s*[-*+]\s+(?:Change|Що зробити):\s*(.*)$"),
+    "Done when": re.compile(r"^\s*[-*+]\s+(?:Done when|Готово, коли):\s*(.*)$"),
+    "Depends on": re.compile(r"^\s*[-*+]\s+(?:Depends on|Залежить від):\s*(.*)$"),
+    "Blocked by": re.compile(r"^\s*[-*+]\s+(?:Blocked by|Заблоковано):\s*(.*)$"),
+}
+REQUIRED_TASK_FIELDS = ("Covers", "Files", "Change", "Done when", "Depends on")
+BLOCKED_RE = TASK_FIELD_RES["Blocked by"]
+COVERS_RE = TASK_FIELD_RES["Covers"]
 QUESTION_REF_RE = re.compile(r"\b(PRD|Spec) (Q\d+)\b")
 NOT_COVERED_RE = re.compile(r"^\s*\*\*(?:Not covered|Не покрито):\*\*")
+GAP_RE = re.compile(r"^\s*\*\*(?:Partial|Частково|Not covered|Не покрито):\*\*")
+# An answered question carries its answer on its own line: "Answered 2026-03-09: …" / "Відповідь 2026-03-09: …".
+ANSWERED_RE = re.compile(r"\b(?:Answered|Відповідь) \d{4}-\d{2}-\d{2}:")
+# A source in links:, "Role: name — URL"; the URL may be left out for a key the team's tracker resolves ("Jira: SHOP-412").
+LINK_ENTRY_RE = re.compile(r"^[A-Za-z][\w /&.-]*: [^—]+(?: — \S+)?$")
+MD_LINK_RE = re.compile(r"\[[^\]]*\]\([^)]*\)")
+URL_RE = re.compile(r"https?://\S+")
 # Template scaffolding that must not survive into a real document.
 HTML_RE = re.compile(
     r"<!--.*?-->|</?(?:br|hr|b|i|u|em|strong|code|kbd|sub|sup|span|div|p|a|img|details|summary|table|thead|tbody|tr|td|th|ul|ol|li|small|mark|del|ins|s)(?:\s[^<>]*)?/?>",
@@ -129,24 +166,49 @@ def relative_link(src: Path, dst: Path) -> str:
 # --- parsing -----------------------------------------------------------------
 
 def strip_comment(value: str) -> str:
-    """Drop a trailing YAML comment: '#' after whitespace, outside a quoted value ("PR: #12 — …" is kept)."""
+    """Drop a trailing YAML comment: '#' after whitespace, outside a quoted scalar or quoted list item ("PR: #12 — …" is kept).
+
+    A quote opens only where a value or a list item starts, so the apostrophe in `Jane O'Doe   # note` hides nothing.
+    """
     v = value.strip()
-    if v.startswith("#"):
-        return ""
-    if v and v[0] in "\"'":
-        end = v.find(v[0], 1)
-        if end != -1:
-            rest = v[end + 1:]
-            m = re.search(r"\s#", rest)
-            return (v[: end + 1] + (rest[: m.start()] if m else rest)).rstrip()
-    m = re.search(r"\s#", v)
-    return v[: m.start()].rstrip() if m else v
+    quote = None
+    for i, ch in enumerate(v):
+        if quote:
+            if ch == quote:
+                quote = None
+        elif ch in "\"'" and (i == 0 or v[:i].rstrip().endswith(("[", ","))):
+            quote = ch
+        elif ch == "#" and (i == 0 or v[i - 1].isspace()):
+            return v[:i].rstrip()
+    return v
 
 
 def unquote(value: str) -> str:
     if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
         return value[1:-1]
     return value
+
+
+def list_items(value: str):
+    """Items of a YAML list the frontmatter parser kept as text: a flow list `[a, "b, c"]` or block items joined by newlines."""
+    v = value.strip()
+    if v.startswith("[") and v.endswith("]"):
+        items, buf, quote = [], "", None
+        for ch in v[1:-1]:
+            if quote:
+                buf += ch
+                if ch == quote:
+                    quote = None
+            elif ch in "\"'":
+                quote, buf = ch, buf + ch
+            elif ch == ",":
+                items.append(buf)
+                buf = ""
+            else:
+                buf += ch
+        items.append(buf)
+        return [unquote(i.strip()) for i in items if i.strip()]
+    return [i for i in v.split("\n") if i.strip()]
 
 
 def parse_frontmatter(lines):
@@ -198,6 +260,21 @@ def text_lines(doc):
     return [(n, line) for n, line, fence in doc["records"] if fence is None]
 
 
+def mermaid_type(lines):
+    """The diagram type a Mermaid block declares: its first word, after any %% directive or --- front matter."""
+    in_front = False
+    for line in lines:
+        s = line.strip()
+        if not s or s.startswith("%%"):
+            continue
+        if s == "---":
+            in_front = not in_front
+            continue
+        if not in_front:
+            return s.split()[0].rstrip(";:")
+    return ""
+
+
 def mermaid_skeleton(lines):
     """Mermaid lines with labels removed: node IDs, participants and arrows stay, translated words go."""
     out = []
@@ -238,7 +315,8 @@ def parse(path: Path):
     sections = [new_section("(before first heading)", 0)]
     headings = []  # (level, title, line number)
     ids, code, links = set(), Counter(), []
-    fence_lines, fence_lang = None, ""
+    mermaid = []  # (line of the fence, diagram type) per Mermaid block
+    fence_lines, fence_lang, fence_start = None, "", 0
     table = None  # [rows, columns] while inside a table
 
     for n, line, fence in records:
@@ -246,12 +324,14 @@ def parse(path: Path):
         if fence:
             kind, lang = fence
             if kind == "open":
-                fence_lines, fence_lang = [], lang
+                fence_lines, fence_lang, fence_start = [], lang, n
             elif kind == "in":
                 fence_lines.append(line)
                 ids.update(ID_RE.findall(line))
             else:
                 section["fences"].append(fence_key(fence_lang, fence_lines))
+                if fence_lang == "mermaid":
+                    mermaid.append((fence_start, mermaid_type(fence_lines)))
                 fence_lines = None
             continue
 
@@ -264,8 +344,8 @@ def parse(path: Path):
                 table[0] += 1
                 m = ROW_RE.match(line)
                 if m:
-                    cells = m.group(2).split("|")
-                    section["rows"].append((m.group(1), "~~" in cells[0], cells[0].strip()))
+                    cells = [c.strip() for c in m.group(2).strip().rstrip("|").split("|")]
+                    section["rows"].append((m.group(1), "~~" in cells[0], cells, n))
         else:
             table = None
 
@@ -283,7 +363,8 @@ def parse(path: Path):
             section["checkboxes"].append(m.group(1).lower() == "x")
         m = HEAD_DEF_RE.match(line)
         if m:
-            section["defs"].append((m.group(1), n))
+            box = CHECKBOX_RE.match(line)
+            section["defs"].append((m.group(1), n, bool(box and box.group(1).lower() == "x")))
 
         ids.update(ID_RE.findall(line))
         code.update(c[1].strip() for c in CODE_RE.findall(line))
@@ -291,6 +372,8 @@ def parse(path: Path):
 
     if fence_lines is not None:  # unclosed fence runs to the end of the file
         sections[-1]["fences"].append(fence_key(fence_lang, fence_lines))
+        if fence_lang == "mermaid":
+            mermaid.append((fence_start, mermaid_type(fence_lines)))
 
     _DOCS[path] = {
         "path": path,
@@ -304,6 +387,7 @@ def parse(path: Path):
         "ids": ids,
         "code": code,
         "links": links,
+        "mermaid": mermaid,
     }
     return _DOCS[path]
 
@@ -336,8 +420,14 @@ def lint(path: Path):
     issues = lint_frontmatter(path, doc)
     issues += lint_headings(path, doc)
     issues += lint_ids(path, doc)
+    issues += lint_questions(doc)
+    issues += lint_requirements(path, doc)
+    if path.stem == "spec":
+        issues += lint_coverage(doc)
     if path.stem == "tasks":
         issues += lint_tasks(doc)
+    issues += lint_sources(doc)
+    issues += lint_diagrams(doc)
     issues += lint_scaffolding(doc)
     return issues
 
@@ -357,6 +447,13 @@ def lint_frontmatter(path, doc):
         issues.append(f"frontmatter 'type: {fm['type']}' does not match the file name {path.name}")
     if fm.get("lang") and lang and fm["lang"] != lang:
         issues.append(f"frontmatter 'lang: {fm['lang']}' does not match the folder {lang}/")
+    if fm.get("feature") and index:
+        folder = path.parts[index - 1]
+        if fm["feature"] != folder:
+            issues.append(f"frontmatter 'feature: {fm['feature']}' does not match the feature folder {folder}/")
+    for entry in list_items(fm.get("links", "")):
+        if not LINK_ENTRY_RE.match(entry):
+            issues.append(f"frontmatter links entry {entry!r} is not of the form \"Role: name — URL\" (\"Jira: SHOP-412\", \"Figma: consent banner — https://…\")")
     if fm.get("status") and fm["status"] not in STATUSES:
         issues.append(f"frontmatter 'status: {fm['status']}' is not one of {' / '.join(STATUSES)}")
     dates = {}
@@ -372,8 +469,8 @@ def lint_frontmatter(path, doc):
         issues.append(f"frontmatter 'updated' ({fm['updated']}) is earlier than 'created' ({fm['created']})")
     for key in SIBLING_KEYS[stem]:
         v = fm.get(key)
-        if v and not (path.parent / v).is_file():
-            issues.append(f"frontmatter '{key}: {v}' names a file that does not exist")
+        if v and not (path.parent / v).is_file() and v != f"./{key}.md":
+            issues.append(f"frontmatter '{key}: {v}' names a file that does not exist (a sibling not written yet is linked as ./{key}.md)")
     if lang and fm.get("mirror"):
         expected = relative_link(path, twin(path, lang, index))
         if fm["mirror"] != expected:
@@ -394,6 +491,10 @@ def lint_headings(path, doc):
         doc_h1 = [t for l, t, _ in doc["headings"] if l == 1]
         if len(doc_h1) != 1 or not doc_h1[0].endswith(suffix):
             issues.append(f"title heading must be one '# <name>{suffix}' (found {doc_h1})")
+        else:
+            name, title = doc_h1[0][: -len(suffix)].strip(), doc["frontmatter"].get("title", "")
+            if title and name != title:
+                issues.append(f"title heading names {name!r} but the frontmatter says 'title: {title}'; the two are the same name")
     order = {(l, t): i for i, (l, t, _) in enumerate(tpl) if l > 1}
     seen, last = set(), -1
     for l, t, n in doc["headings"]:
@@ -419,10 +520,10 @@ def lint_ids(path, doc):
     """Every T / Q header and every R row of the requirements table defined once; bold IDs without the period."""
     issues, seen = [], Counter()
     for section in doc["sections"]:
-        for id_, _ in section["defs"]:
+        for id_, _, _ in section["defs"]:
             seen[id_] += 1
         if section["title"] in DEFINITION_SECTIONS.get(path.stem, set()):
-            for rid, _, _ in section["rows"]:
+            for rid, _, _, _ in section["rows"]:
                 seen[rid] += 1
     for id_, count in sorted(seen.items()):
         if count > 1:
@@ -434,37 +535,92 @@ def lint_ids(path, doc):
     return issues
 
 
-def lint_tasks(doc):
-    """Tasks in execution order, each with one Covers line, blockers naming a question."""
+def lint_questions(doc):
+    """A ticked question carries its answer on its line: 'Answered YYYY-MM-DD: …' (Ukrainian 'Відповідь YYYY-MM-DD: …')."""
     issues = []
-    tasks, covers, dropped = [], Counter(), set()
+    for section in doc["sections"]:
+        for id_, n, ticked in section["defs"]:
+            if id_.startswith("Q") and ticked and not ANSWERED_RE.search(doc["lines"][n - 1]):
+                issues.append(f"line {n}: {id_} is ticked but has no 'Answered YYYY-MM-DD: …' after the owner (Ukrainian: 'Відповідь YYYY-MM-DD: …'); an answered question keeps its line and gains the answer")
+    return issues
+
+
+def lint_requirements(path, doc):
+    """Requirement rows: a live row has a Must / Should / Could priority and acceptance criteria; a table that is all Must isn't prioritised."""
+    if path.stem == "spec" and (path.parent / "prd.md").is_file():
+        return []  # the PRD defines the requirements; a table in the Spec's Context is then a reference, not the definition
+    issues, live = [], []
+    for section in doc["sections"]:
+        if section["title"] not in DEFINITION_SECTIONS.get(path.stem, set()):
+            continue
+        for rid, struck, cells, n in section["rows"]:
+            if struck:
+                continue
+            priority = cells[1].strip("* ") if len(cells) > 1 else ""
+            criteria = cells[2] if len(cells) > 2 else ""
+            live.append(priority)
+            if priority not in PRIORITIES:
+                issues.append(f"line {n}: {rid} priority {priority!r} is not Must / Should / Could")
+            if not criteria:
+                issues.append(f"line {n}: {rid} has no acceptance criteria (at least one check a tester can run)")
+    if len(live) >= 3 and all(p == "Must" for p in live):
+        issues.append(f"all {len(live)} requirements are Must; a table that is all Must hasn't been prioritised (a debug aid, a convenience or anything to be removed later is Should or Could)")
+    return issues
+
+
+def lint_coverage(doc):
+    """A coverage row marked Partial: / Not covered: names the question that tracks the gap."""
+    issues = []
+    for section in doc["sections"]:
+        if section["title"] in COVERAGE_SECTIONS:
+            for rid, _, cells, n in section["rows"]:
+                m = GAP_RE.match(cells[0])
+                if m and not QUESTION_REF_RE.search(" ".join(cells)):
+                    issues.append(f"line {n}: {rid} is {m.group(0).strip()} but names no question (PRD Qn / Spec Qn) that tracks what's missing")
+    return issues
+
+
+def lint_tasks(doc):
+    """Tasks in execution order, each with its fields; ticks consistent with dependencies; a dropped task keeps no fields."""
+    issues = []
+    tasks, ticked, dropped, fields = [], set(), set(), {}
     task = None
     for n, line in text_lines(doc):
         m = TASK_DEF_RE.match(line)
         if m:
-            task = m.group(2)
+            task = m.group(3)
             tasks.append(task)
-            if m.group(1):
+            fields[task] = Counter()
+            if m.group(1).lower() == "x":
+                ticked.add(task)
+            if m.group(2):
                 dropped.add(task)  # ~~struck through~~: dropped, keeps no fields
             continue
         if task is None:
             continue
+        field = next((name for name, rx in TASK_FIELD_RES.items() if rx.match(line)), None)
+        if field is None:
+            continue
+        fields[task][field] += 1
+        if task in dropped:
+            issues.append(f"line {n}: {task} is dropped but keeps a '{field}' line; a dropped task keeps only the reason")
+            continue
+        value = TASK_FIELD_RES[field].match(line).group(1).strip()
         above = set(tasks[:-1])
-        m = DEPENDS_RE.match(line)
-        if m:
-            for dep in re.findall(r"\bT\d+\b", m.group(1)):
+        if field == "Depends on":
+            for dep in re.findall(r"\bT\d+\b", value):
                 if dep == task:
                     issues.append(f"line {n}: {task} depends on itself")
                 elif dep not in above:
                     issues.append(f"line {n}: {task} depends on {dep}, which is not above it (tasks go in execution order)")
-        m = BLOCKED_RE.match(line)
-        if m and m.group(1).strip() not in ("", NONE_MARK) and not QUESTION_REF_RE.search(m.group(1)):
-            issues.append(f"line {n}: {task} 'Blocked by' must name a question as 'PRD Qn' or 'Spec Qn' (found {m.group(1).strip()!r})")
-        m = COVERS_RE.match(line)
-        if m:
-            covers[task] += 1
-            labels = [c[1].strip() for c in CODE_RE.findall(m.group(1))]
-            rids = re.findall(r"\bR\d+\b", CODE_RE.sub("", m.group(1)))
+                elif task in ticked and dep not in ticked and dep not in dropped:
+                    issues.append(f"line {n}: {task} is ticked but depends on {dep}, which is not")
+        elif field == "Blocked by":
+            if value not in ("", NONE_MARK) and not QUESTION_REF_RE.search(value):
+                issues.append(f"line {n}: {task} 'Blocked by' must name a question as 'PRD Qn' or 'Spec Qn' (found {value!r})")
+        elif field == "Covers":
+            labels = [c[1].strip() for c in CODE_RE.findall(value)]
+            rids = re.findall(r"\bR\d+\b", CODE_RE.sub("", value))
             bad = [l for l in labels if l not in COVERS_LABELS]
             if bad:
                 issues.append(f"line {n}: {task} 'Covers' label must be setup, verify or rollout (found {bad})")
@@ -475,9 +631,33 @@ def lint_tasks(doc):
             elif not labels and not rids:
                 issues.append(f"line {n}: {task} 'Covers' names neither requirement IDs nor a label")
     for t in tasks:
-        if t not in dropped and covers[t] != 1:
-            issues.append(f"{t} has {covers[t]} 'Covers' lines; every task has exactly one")
+        if t in dropped:
+            continue
+        for name in REQUIRED_TASK_FIELDS:
+            count = fields[t][name]
+            if count == 0:
+                issues.append(f"{t} has no '{name}' line; every task has {', '.join(REQUIRED_TASK_FIELDS)} (and 'Blocked by' when a question blocks it)")
+            elif count > 1:
+                issues.append(f"{t} has {count} '{name}' lines; one of each")
     return issues
+
+
+def lint_sources(doc):
+    """No bare URL in the body: a source is cited as [text](URL) where it is used and listed in links: as "Role: name — URL"."""
+    issues = []
+    for n, line in text_lines(doc):
+        prose = MD_LINK_RE.sub("", CODE_RE.sub("", line))
+        for m in URL_RE.finditer(prose):
+            issues.append(f"line {n}: bare URL {m.group(0).rstrip('>).,;')!r}; cite it as [text](URL) where it is used and list it in links: as \"Role: name — URL\"")
+    return issues
+
+
+def lint_diagrams(doc):
+    """Every Mermaid block starts with a diagram type Mermaid knows."""
+    return [
+        f"line {n}: Mermaid block starts with {word!r}, not a diagram type ({', '.join(MERMAID_TYPES[:5])}, …)"
+        for n, word in doc["mermaid"] if word not in MERMAID_TYPES
+    ]
 
 
 def lint_scaffolding(doc):
@@ -511,7 +691,8 @@ def compare(en: Path, uk: Path):
     if set(fa) != set(fb):
         issues.append(f"frontmatter keys differ: only EN {sorted(set(fa) - set(fb))}, only UK {sorted(set(fb) - set(fa))}")
     for key in sorted(set(fa) & set(fb) - LANG_SPECIFIC_KEYS):
-        if fa[key] != fb[key]:
+        va, vb = (list_items(fa[key]), list_items(fb[key])) if key in LIST_KEYS else (fa[key], fb[key])
+        if va != vb:
             issues.append(f"frontmatter '{key}' differs: EN {fa[key]!r} vs UK {fb[key]!r}")
 
     la, lb = [l for l, _, _ in a["headings"]], [l for l, _, _ in b["headings"]]
@@ -547,8 +728,12 @@ def compare(en: Path, uk: Path):
         only_en = sorted((a["code"] - b["code"]).elements())
         only_uk = sorted((b["code"] - a["code"]).elements())
         issues.append(f"inline code differs (identifiers must not be translated): only EN {only_en}, only UK {only_uk}")
-    if a["links"] != b["links"]:
-        issues.append(f"links differ: EN {a['links']} vs UK {b['links']}")
+    la, lb = [l for l in a["links"] if not l.startswith("#")], [l for l in b["links"] if not l.startswith("#")]
+    if la != lb:
+        issues.append(f"links differ: EN {la} vs UK {lb}")
+    na, nb = sum(l.startswith("#") for l in a["links"]), sum(l.startswith("#") for l in b["links"])
+    if na != nb:
+        issues.append(f"in-page anchors differ in number: EN {na} vs UK {nb} (an anchor points at the translated heading, so only the count is compared)")
     return issues
 
 
@@ -559,7 +744,7 @@ def rows_in(path: Path, section_titles):
     rows = {}
     for section in parse(path)["sections"]:
         if section["title"] in section_titles:
-            for rid, struck, _ in section["rows"]:
+            for rid, struck, _, _ in section["rows"]:
                 rows[rid] = struck
     return rows
 
@@ -569,14 +754,29 @@ def not_covered_in(path: Path):
     ids = set()
     for section in parse(path)["sections"]:
         if section["title"] in COVERAGE_SECTIONS:
-            for rid, _, cell in section["rows"]:
-                if NOT_COVERED_RE.match(cell):
+            for rid, _, cells, _ in section["rows"]:
+                if NOT_COVERED_RE.match(cells[0]):
                     ids.add(rid)
     return ids
 
 
 def question_defs(path: Path):
-    return {id_ for section in parse(path)["sections"] for id_, _ in section["defs"] if id_.startswith("Q")}
+    """{Q ID: answered (ticked)} for the questions a document defines."""
+    return {id_: ticked for section in parse(path)["sections"] for id_, _, ticked in section["defs"] if id_.startswith("Q")}
+
+
+def blockers_in(path: Path):
+    """(task, document, question, line) for every 'Blocked by' reference in a task list."""
+    out, task = [], None
+    for n, line in text_lines(parse(path)):
+        m = TASK_DEF_RE.match(line)
+        if m:
+            task = m.group(3)
+            continue
+        m = BLOCKED_RE.match(line)
+        if m and task:
+            out.extend((task, where, q, n) for where, q in QUESTION_REF_RE.findall(m.group(1)))
+    return out
 
 
 def question_refs(path: Path):
@@ -621,20 +821,27 @@ def check_feature(folder: Path):
             issues.append(f"{spec.name}: {r} in Requirements coverage is not in {source}")
     if tasks.exists():
         covered = covered_in_tasks(tasks)
-        live = {r for r, struck in reqs.items() if not struck}
-        if spec.exists():
-            live -= not_covered_in(spec)
-        for r in by_number(live - covered):
+        dropped = {r for r, struck in reqs.items() if struck}
+        not_covered = not_covered_in(spec) if spec.exists() else set()
+        for r in by_number(set(reqs) - dropped - not_covered - covered):
             issues.append(f"{tasks.name}: {r} is in no task's Covers")
         for r in by_number(covered - set(reqs)):
             issues.append(f"{tasks.name}: Covers names {r}, which is not in {source}")
-    defined = {"PRD": question_defs(prd) if prd.exists() else set(), "Spec": question_defs(spec) if spec.exists() else set()}
+        for r in by_number(covered & dropped):
+            issues.append(f"{tasks.name}: Covers names {r}, which is dropped in {source}")
+        for r in by_number(covered & not_covered):
+            issues.append(f"{tasks.name}: Covers names {r}, which the Spec marks Not covered:")
+    defined = {"PRD": question_defs(prd) if prd.exists() else {}, "Spec": question_defs(spec) if spec.exists() else {}}
     for doc in (prd, spec, tasks):
         if not doc.exists():
             continue
         for where, q in sorted(question_refs(doc), key=lambda r: (r[0], int(r[1][1:]))):
             if q not in defined[where]:
                 issues.append(f"{doc.name}: refers to {where} {q}, which {where.lower()}.md does not define")
+    if tasks.exists():
+        for task, where, q, n in blockers_in(tasks):
+            if defined[where].get(q):
+                issues.append(f"{tasks.name}: line {n}: {task} is blocked by {where} {q}, which is answered (ticked); drop the line or block on an open question")
     return issues
 
 

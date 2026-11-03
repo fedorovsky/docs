@@ -46,8 +46,8 @@ links: []                # "Role: name — URL", e.g. "Jira: TRACK-12 — https:
 
 | PRD ID | How it's satisfied | Section |
 |--------|--------------------|---------|
-| R1 | <mechanism> | <link to section above> |
-| R2 | <mechanism> | <link to section above> |
+| R1 | <mechanism> | <name of the section above> |
+| R2 | <mechanism> | <name of the section above> |
 
 <Start the cell with **Partial:** or **Not covered:** when the design doesn't fully meet the requirement, and say what's missing.>
 
