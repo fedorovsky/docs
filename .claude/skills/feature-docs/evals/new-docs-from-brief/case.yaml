@@ -1,0 +1,11 @@
+schema_version: "1.1"
+name: new-docs-from-brief
+expected_outcome: |
+  Six documents, prd.md, spec.md and tasks.md under en/ and uk/ of one feature folder
+  (docs/features/<slug>/), written from the brief without stopping to ask. The blocking assumptions
+  (who the users are, the legal driver, the final UI copy) sit under the PRD's open questions with the
+  assumption made. No number the brief doesn't state. The PRD stays free of implementation details,
+  the Spec says there is no code yet, the tasks put the entry point last, and check_mirror.py passes
+  on the folder.
+context:
+  scaffold_script: place-files.sh

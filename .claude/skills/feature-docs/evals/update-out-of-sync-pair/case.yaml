@@ -1,0 +1,10 @@
+schema_version: "1.1"
+name: update-out-of-sync-pair
+expected_outcome: |
+  Both spec files say the signed link is valid 48 h, and the Spec Q1 assumption about deleting files
+  together with the link's expiry follows (48 h) or is explicitly left with a note. Before the edit
+  the out-of-sync pair is repaired: the Ukrainian-only sentence about offering to clear the filters is
+  ported to en/spec.md rather than discarded, and neither side is regenerated. updated is the same new
+  date in both. check_mirror.py passes and the hand-over names the repaired pair.
+context:
+  scaffold_script: place-files.sh
