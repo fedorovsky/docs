@@ -3,7 +3,7 @@ type: prd
 title: User identity and tracking consent
 feature: identity-tracking-consent
 lang: en
-mirror: ../ru/prd.md
+mirror: ../uk/prd.md
 status: draft
 owner: a.fedorovskyi
 reviewers: []

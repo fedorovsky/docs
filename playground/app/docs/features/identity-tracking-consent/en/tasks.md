@@ -3,7 +3,7 @@ type: tasks
 title: User identity and tracking consent
 feature: identity-tracking-consent
 lang: en
-mirror: ../ru/tasks.md
+mirror: ../uk/tasks.md
 status: draft
 owner: a.fedorovskyi
 reviewers: []
