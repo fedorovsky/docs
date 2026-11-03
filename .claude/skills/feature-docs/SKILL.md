@@ -1,11 +1,11 @@
 ---
 name: feature-docs
-description: Writes, updates and reviews feature docs as three mirrored English/Russian documents per feature — PRD (why and what), technical Spec (how), task list (order of work) — and implements a feature task by task from that list. Use whenever the user wants to describe, plan, document or design a feature; asks for a PRD, requirements, spec, design doc, RFC or implementation plan; wants to turn a ticket, notes or a conversation into feature docs; wants to break a spec into tasks or implement from it; or asks to review, audit, check or update PRD/spec/tasks files or a folder of feature docs, or to do the next task from such a list — even without the words "PRD" or "spec" ("let's write down what this feature should do", "опиши фичу", "напиши ПРД", "сделай спеку", "разбей на задачи", "делай по задачам", "проведи аудит доков", "проверь доки", "обнови спеку", "следующая задача"). Not for READMEs, API reference, changelogs, ADRs or code comments, nor for implementing anything that has no tasks.md.
+description: Writes, updates and reviews feature docs as three mirrored English/Ukrainian documents per feature — PRD (why and what), technical Spec (how), task list (order of work) — and implements a feature task by task from that list. Use whenever the user wants to describe, plan, document or design a feature; asks for a PRD, requirements, spec, design doc, RFC or implementation plan; wants to turn a ticket, notes or a conversation into feature docs; wants to break a spec into tasks or implement from it; or asks to review, audit, check or update PRD/spec/tasks files or a folder of feature docs, or to do the next task from such a list — even without the words "PRD" or "spec" ("let's write down what this feature should do", "опиши фічу", "напиши ПРД", "зроби спеку", "розбий на задачі", "проведи аудит доків", "перевір доки", "наступна задача", or in Russian: "сделай спеку", "разбей на задачи"). Not for READMEs, API reference, changelogs, ADRs or code comments, nor for implementing anything that has no tasks.md.
 ---
 
 # Feature docs
 
-Three documents per feature, each in English and Russian:
+Three documents per feature, each in English and Ukrainian:
 
 | Document | Answers | Author | Holds | Never holds |
 |---|---|---|---|---|
@@ -20,24 +20,24 @@ Layout inside the feature folder, fixed regardless of project conventions (where
 ```
 <feature-slug>/            # kebab-case: orders-csv-export
   en/prd.md  en/spec.md  en/tasks.md
-  ru/prd.md  ru/spec.md  ru/tasks.md
+  uk/prd.md  uk/spec.md  uk/tasks.md
 ```
 
 Bundled files, relative to this skill's directory:
 
-- `assets/templates/{en,ru}/{prd,spec,tasks}.md`: the document structure.
-- `references/examples/orders-csv-export/`: a worked example, read only when writing a new document: the `en/` set once for depth and tone, and `ru/prd.md` before the first mirror. Review, Update and Implement don't need it.
-- `references/mirror.md`: the bilingual mirror rules. Read before writing or editing any `ru/` file.
+- `assets/templates/{en,uk}/{prd,spec,tasks}.md`: the document structure.
+- `references/examples/orders-csv-export/`: a worked example, read only when writing a new document: the `en/` set once for depth and tone, and `uk/prd.md` before the first mirror. Review, Update and Implement don't need it.
+- `references/mirror.md`: the bilingual mirror rules. Read before writing or editing any `uk/` file.
 - `references/diagrams.md`: when to draw, which Mermaid type, where. Read before adding or editing a diagram.
 - `references/checklist.md`: the review checklist. Read at hand-over and in Review mode.
-- `scripts/check_mirror.py`: checks each file on its own (frontmatter complete and valid, headings the template's, IDs defined once, task fields, no scaffolding), each EN/RU pair structurally (headings paired by template position, lists, tables, code blocks byte-identical, Mermaid by node IDs and arrows) and each feature across its documents (every requirement in the Spec's coverage table and, unless **Not covered:**, in some task's *Covers*; every "PRD Qn" / "Spec Qn" defined). Run it (Python 3, no packages); don't read it.
+- `scripts/check_mirror.py`: checks each file on its own (frontmatter complete and valid, headings the template's, IDs defined once, task fields, no scaffolding), each EN/UK pair structurally (headings paired by template position, lists, tables, code blocks byte-identical, Mermaid by node IDs and arrows) and each feature across its documents (every requirement in the Spec's coverage table and, unless **Not covered:**, in some task's *Covers*; every "PRD Qn" / "Spec Qn" defined). Run it (Python 3, no packages); don't read it.
 - `scripts/test_check_mirror.py`: the script's own regression cases, for whoever changes the script; not part of checking a feature.
 
 ## Workflow
 
 ### 1. Locate the docs
 
-The project is the codebase the feature belongs to; in a monorepo, the package or app. Check its `CLAUDE.md` and `README` for a docs location, then search for existing feature docs (`**/prd.md`, `**/spec.md`, `docs/features/`). An existing location and naming win over the default `docs/features/<feature-slug>/`. No docs folder yet means creating `docs/features/<feature-slug>/`. The `en/` + `ru/` mirror is not negotiable: docs found in one language, or flat in the feature folder, belong in `en/` (or `ru/`) with a mirror beside them. Moving someone's files is not a routine edit: say what would move where and ask before doing it, then `git mv` so history follows. A document that exists in Russian only keeps its text as the original; the English side is written as its translation with the same `created` and `updated`, and from then on the usual rule applies (English is the main document).
+The project is the codebase the feature belongs to; in a monorepo, the package or app. Check its `CLAUDE.md` and `README` for a docs location, then search for existing feature docs (`**/prd.md`, `**/spec.md`, `docs/features/`). An existing location and naming win over the default `docs/features/<feature-slug>/`. No docs folder yet means creating `docs/features/<feature-slug>/`. The `en/` + `uk/` mirror is not negotiable: docs found in one language, or flat in the feature folder, belong in `en/` (or `uk/`) with a mirror beside them. Moving someone's files is not a routine edit: say what would move where and ask before doing it, then `git mv` so history follows. A document that exists in Ukrainian only keeps its text as the original; the English side is written as its translation with the same `created` and `updated`, and from then on the usual rule applies (English is the main document).
 
 ### 2. Identify the mode
 
@@ -72,8 +72,8 @@ Never substitute a plausible value for a missing metric, baseline, date or owner
 - Drop *(optional)* sections that don't apply. A required section with nothing to say gets one line ("No new dependencies.") so reviewers know it was considered.
 - Remove all scaffolding: angle-bracket placeholders, guidance text, *(optional)* markers, frontmatter comments.
 - Size to the feature: a small feature's PRD fits one screen. Tables and short bullets over prose.
-- English first, in English whatever language the sources are in; then the Russian mirror from the Russian template, by the rules in `references/mirror.md`. Never draft the two independently. A diagram follows `references/diagrams.md`.
-- Links: `prd:` / `spec:` / `tasks:` point to the two siblings in the same language folder (`./prd.md`), so every document reaches the other two; `mirror:` points to the twin (`../ru/prd.md` from `en/`).
+- English first, in English whatever language the sources are in; then the Ukrainian mirror from the Ukrainian template, by the rules in `references/mirror.md`. Never draft the two independently. A diagram follows `references/diagrams.md`.
+- Links: `prd:` / `spec:` / `tasks:` point to the two siblings in the same language folder (`./prd.md`), so every document reaches the other two; `mirror:` points to the twin (`../uk/prd.md` from `en/`).
 - Sources: every external source (Jira, Figma, Confluence, a PR, research) is an entry in `links:` of the form `"Role: name — URL"` (`"Jira: TRACK-12"` alone when the key resolves in the team's tracker), in English in both versions, in the document it informs: tickets, designs and research in the PRD, PRs and technical pages in the Spec, the ticket and PRs in Tasks. A fact cites its source in the sentence that uses it (*Problem*, the metrics table, *Context & current state*, *Alternatives & decisions*). No bare URL anywhere, and no separate list of sources in the body.
 
 ### 5. Check and hand over
@@ -92,7 +92,7 @@ The hand-over message names the files, the assumptions the draft rests on (liste
 
 ### IDs
 
-`R1…` requirements, `Q1…` open questions (numbered per document), `T1…` tasks. A task or question is defined by its bold header with the period, `**T1.**` / `**Q1.**`; without the period the script doesn't see it. IDs are permanent: never renumber. A dropped item stays ~~struck through~~ with a reason (the text, never the ID cell, so the row is still found); a new one takes the next free number. Refer to questions by document and number, "PRD Q3" / "Spec Q1", identically in Russian ("см. PRD Q3"). An answered question is ticked and keeps its line, with the answer after the owner: `— Jane Doe. Answered 2026-03-09: …` (Russian: `Ответ 2026-03-09: …`); dependent text is updated in the same edit: an `Assumption (PRD Qn): …` the answer confirms or replaces becomes a plain statement that keeps the `(PRD Qn)` reference, so a reader can still find why.
+`R1…` requirements, `Q1…` open questions (numbered per document), `T1…` tasks. A task or question is defined by its bold header with the period, `**T1.**` / `**Q1.**`; without the period the script doesn't see it. IDs are permanent: never renumber. A dropped item stays ~~struck through~~ with a reason (the text, never the ID cell, so the row is still found); a new one takes the next free number. Refer to questions by document and number, "PRD Q3" / "Spec Q1", identically in Ukrainian ("див. PRD Q3"). An answered question is ticked and keeps its line, with the answer after the owner: `— Jane Doe. Answered 2026-03-09: …` (Ukrainian: `Відповідь 2026-03-09: …`); dependent text is updated in the same edit: an `Assumption (PRD Qn): …` the answer confirms or replaces becomes a plain statement that keeps the `(PRD Qn)` reference, so a reader can still find why.
 
 A new item goes where it belongs in the order (a task where it runs, a requirement next to its neighbours), not at the end, so IDs may run out of file order. After inserting one, search the file for its ID: an edit that lands twice is how a duplicate appears, and the check script fails on it.
 
@@ -105,8 +105,8 @@ A new item goes where it belongs in the order (a task where it runs, a requireme
 ### Spec
 
 - *Context & current state* describes the real code, with paths.
-- *Requirements coverage* lists every PRD requirement. A row the design meets only partly, or not at all, starts with **Partial:** or **Not covered:** (Russian: **Частично:** / **Не покрыто:**), says what's missing, and has a matching open question.
-- Where the PRD is silent or contradicts itself (a limit, a default, who sees what): take the most conservative option that breaks no other requirement, write it in the section it affects as `Assumption (PRD Q4): …` (Russian: `Допущение (PRD Q4): …`), and add that question to the PRD. If every option breaks some requirement, the requirement it breaks is marked **Partial:** in *Requirements coverage*, citing the same question. The Spec's own open questions are technical, plus questions about the Spec or `tasks.md` themselves; `tasks.md` has no open-questions section. A technical value the Spec needs but can't settle gets the same treatment with its own question, `Assumption (Spec Qn): …`, so the work isn't blocked on it.
+- *Requirements coverage* lists every PRD requirement. A row the design meets only partly, or not at all, starts with **Partial:** or **Not covered:** (Ukrainian: **Частково:** / **Не покрито:**), says what's missing, and has a matching open question.
+- Where the PRD is silent or contradicts itself (a limit, a default, who sees what): take the most conservative option that breaks no other requirement, write it in the section it affects as `Assumption (PRD Q4): …` (Ukrainian: `Припущення (PRD Q4): …`), and add that question to the PRD. If every option breaks some requirement, the requirement it breaks is marked **Partial:** in *Requirements coverage*, citing the same question. The Spec's own open questions are technical, plus questions about the Spec or `tasks.md` themselves; `tasks.md` has no open-questions section. A technical value the Spec needs but can't settle gets the same treatment with its own question, `Assumption (Spec Qn): …`, so the work isn't blocked on it.
 - *Alternatives & decisions* records each non-obvious choice: options, choice, reason. A decision spanning several features may deserve an ADR; suggest it, don't create it.
 - Edge cases, testing plan, and rollout with rollback are always present.
 - The release is the rollout: order it so it is safe (migrations backward compatible and ahead of the code), and roll back by redeploying the previous version.

@@ -3,7 +3,7 @@ type: tasks
 title: <Feature name>
 feature: <feature-slug>
 lang: en
-mirror: ../ru/tasks.md
+mirror: ../uk/tasks.md
 status: draft            # draft | review | approved | shipped | deprecated
 owner: <name>
 reviewers: []

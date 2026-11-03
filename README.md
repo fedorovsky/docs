@@ -2,7 +2,7 @@
 
 Claude Code skills for documentation.
 
-- [`feature-docs`](.claude/skills/feature-docs/SKILL.md): feature docs as a PRD, a Spec and an implementation task list, mirrored in English and Russian.
+- [`feature-docs`](.claude/skills/feature-docs/SKILL.md): feature docs as a PRD, a Spec and an implementation task list, mirrored in English and Ukrainian.
 
 ## Install
 

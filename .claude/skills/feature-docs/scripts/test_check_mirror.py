@@ -46,7 +46,7 @@ def _(d): pass
 
 @case("single-language folder is linted", present=["ID T1 is defined 2 times", "MISSING"], code=1)
 def _(d):
-    shutil.rmtree(d / "ru")
+    shutil.rmtree(d / "uk")
     edit(d, "en/tasks.md", "**T2.", "**T1.")
 
 
@@ -57,7 +57,7 @@ def _(d): pass
 @case("missing keys, bad status, impossible date", present=["is missing ['status'", "'status: aproved' is not one", "not a real YYYY-MM-DD"], code=1)
 def _(d):
     edit(d, "en/prd.md", "status: approved\n", "status: aproved\n")
-    edit(d, "ru/prd.md", "status: approved\n", "")
+    edit(d, "uk/prd.md", "status: approved\n", "")
     edit(d, "en/spec.md", "created: 2026-03-10", "created: 2026-13-45")
 
 
@@ -68,20 +68,20 @@ def _(d):
 
 @case("html and comparisons are not scaffolding", absent=["left from the template"], code=0)
 def _(d):
-    for lang, head in (("en", "## Non-goals\n"), ("ru", "## Вне рамок\n")):
+    for lang, head in (("en", "## Non-goals\n"), ("uk", "## Поза межами\n")):
         edit(d, f"{lang}/prd.md", head, head + "\n<!-- reviewer note -->\nTurnaround of <2 days, >1 hour.<br>Second line.\n")
 
 
 @case("quoted scalars pass", absent=["does not exist", "does not match the folder"], code=0)
 def _(d):
-    for lang in ("en", "ru"):
+    for lang in ("en", "uk"):
         edit(d, f"{lang}/prd.md", f"lang: {lang}\n", f'lang: "{lang}"\n')
         edit(d, f"{lang}/prd.md", "spec: ./spec.md\n", 'spec: "./spec.md"\n')
 
 
 @case("column-0 yaml list is read, differing links fail", present=["frontmatter 'links' differs"], code=1)
 def _(d):
-    for lang, u in (("en", "a"), ("ru", "b")):
+    for lang, u in (("en", "a"), ("uk", "b")):
         edit(d, f"{lang}/tasks.md", 'links: ["Jira: SHOP-412"]', f'links:\n- "Jira: SHOP-412 — https://{u}"')
 
 
@@ -93,33 +93,33 @@ def _(d):
 
 @case("second table with R rows outside Requirements is not a definition", absent=["defined 2 times"], code=0)
 def _(d):
-    for lang, head in (("en", "## Users & scenarios\n"), ("ru", "## Пользователи и сценарии\n")):
+    for lang, head in (("en", "## Users & scenarios\n"), ("uk", "## Користувачі та сценарії\n")):
         edit(d, f"{lang}/prd.md", head, head + "\n| ID | Scenario |\n|----|----------|\n| R1 | monthly close |\n| R2 | audit |\n")
 
 
 @case("R rows in the Spec testing plan are not coverage rows", absent=["Requirements coverage is not in"], code=0)
 def _(d):
-    for lang, head in (("en", "## Testing plan\n"), ("ru", "## План тестирования\n")):
+    for lang, head in (("en", "## Testing plan\n"), ("uk", "## План тестування\n")):
         edit(d, f"{lang}/spec.md", head, head + "\n| ID | Level |\n|----|-------|\n| R2 | integration |\n")
 
 
 @case("struck-through ID cell still counts as the row", absent=["not in the PRD"], code=0)
 def _(d):
-    for lang in ("en", "ru"):
+    for lang in ("en", "uk"):
         edit(d, f"{lang}/prd.md", "| R5 | ~~", "| ~~R5~~ | ~~")
 
 
 @case("backtick fence inside tilde fence is one block", absent=["missing in Requirements coverage"], code=0)
 def _(d):
     block = "\n~~~\n```md\n| R9 | nope |\n```\n~~~\n"
-    for lang, head in (("en", "## Non-goals\n"), ("ru", "## Вне рамок\n")):
+    for lang, head in (("en", "## Non-goals\n"), ("uk", "## Поза межами\n")):
         edit(d, f"{lang}/prd.md", head, head + block)
 
 
 @case("Q4 2026 is a quarter, not a question", absent=["only EN ['Q4']"], code=0)
 def _(d):
     edit(d, "en/spec.md", "## Rollout & rollback\n", "## Rollout & rollback\n\nPlanned for Q4 2026.\n")
-    edit(d, "ru/spec.md", "## Раскатка и откат\n", "## Раскатка и откат\n\nПлан — 4 кв. 2026.\n")
+    edit(d, "uk/spec.md", "## Розгортання та відкат\n", "## Розгортання та відкат\n\nПлан — 4 кв. 2026.\n")
 
 
 @case("covers mixing ids and a label fails", present=["mixes requirement IDs and a label"], code=1)
@@ -151,54 +151,54 @@ def _(d):
 
 @case("Blocked by: — is accepted", absent=["'Blocked by' must name"], code=0)
 def _(d):
-    for lang, key in (("en", "Depends on: T7"), ("ru", "Зависит от: T7")):
-        edit(d, f"{lang}/tasks.md", key + "\n", key + ("\n  - Blocked by: —\n" if lang == "en" else "\n  - Заблокировано: —\n"))
+    for lang, key in (("en", "Depends on: T7"), ("uk", "Залежить від: T7")):
+        edit(d, f"{lang}/tasks.md", key + "\n", key + ("\n  - Blocked by: —\n" if lang == "en" else "\n  - Заблоковано: —\n"))
 
 
 @case("mermaid arrow change fails, label change passes", present=["Mermaid is compared"], code=1)
 def _(d):
-    edit(d, "ru/spec.md", "API-->>UI", "API->>Queue")
+    edit(d, "uk/spec.md", "API-->>UI", "API->>Queue")
 
 
 @case("mermaid label-only translation passes", absent=["fenced blocks"], code=0)
 def _(d):
-    edit(d, "ru/spec.md", "Worker->>Email: отправляет ссылку, если задача шла > 10 с", "Worker->>Email: шлёт письмо")
+    edit(d, "uk/spec.md", "Worker->>Email: надсилає посилання, якщо задача тривала > 10 с", "Worker->>Email: шле лист")
 
 
 @case("code block content must match", present=["code blocks are byte-identical"], code=1)
 def _(d):
-    for lang, head, body in (("en", "### Components & changes\n", "const a = 1;"), ("ru", "### Компоненты и изменения\n", "const a = 2;")):
+    for lang, head, body in (("en", "### Components & changes\n", "const a = 1;"), ("uk", "### Компоненти та зміни\n", "const a = 2;")):
         edit(d, f"{lang}/spec.md", head, head + "\n```ts\n" + body + "\n```\n")
 
 
 @case("spec without prd: requirements in context", absent=["does not exist", "missing in Requirements coverage"], code=0)
 def _(d):
-    for lang in ("en", "ru"):
+    for lang in ("en", "uk"):
         (d / lang / "prd.md").unlink()
         for name in ("spec", "tasks"):
             edit(d, f"{lang}/{name}.md", "prd: ./prd.md\n", "")
         p = d / lang / "spec.md"
         p.write_text(p.read_text().replace("PRD Q2", "Spec Q1").replace("PRD Q3", "Spec Q1"))
     edit(d, "en/spec.md", "## Context & current state\n", "## Context & current state\n\n| ID | Requirement | Priority | Acceptance criteria |\n|----|---|---|---|\n| R1 | a | Must | b |\n| R2 | a | Must | b |\n| R3 | a | Must | b |\n| R4 | a | Must | b |\n| R5 | ~~a~~ | — | dropped |\n")
-    edit(d, "ru/spec.md", "## Контекст и текущее состояние\n", "## Контекст и текущее состояние\n\n| ID | Требование | Приоритет | Критерии приёмки |\n|----|---|---|---|\n| R1 | a | Must | b |\n| R2 | a | Must | b |\n| R3 | a | Must | b |\n| R4 | a | Must | b |\n| R5 | ~~a~~ | — | отменено |\n")
+    edit(d, "uk/spec.md", "## Контекст і поточний стан\n", "## Контекст і поточний стан\n\n| ID | Вимога | Пріоритет | Критерії приймання |\n|----|---|---|---|\n| R1 | a | Must | b |\n| R2 | a | Must | b |\n| R3 | a | Must | b |\n| R4 | a | Must | b |\n| R5 | ~~a~~ | — | скасовано |\n")
 
 
-@case("swapped sections are reported with the expected RU heading", present=["out of the template's order", "headings don't pair up"], code=1)
+@case("swapped sections are reported with the expected UK heading", present=["out of the template's order", "headings don't pair up"], code=1)
 def _(d):
-    p = d / "ru/prd.md"; s = p.read_text()
-    a, b, c = s.index("## Цели"), s.index("## Вне рамок"), s.index("## Пользователи и сценарии")
+    p = d / "uk/prd.md"; s = p.read_text()
+    a, b, c = s.index("## Цілі"), s.index("## Поза межами"), s.index("## Користувачі та сценарії")
     p.write_text(s[:a] + s[b:c] + s[a:b] + s[c:])
 
 
 @case("free H3 under a section passes", absent=["not in the en spec template"], code=0)
 def _(d):
-    for lang, head in (("en", "### Components & changes\n"), ("ru", "### Компоненты и изменения\n")):
+    for lang, head in (("en", "### Components & changes\n"), ("uk", "### Компоненти та зміни\n")):
         edit(d, f"{lang}/spec.md", head, head + "\n#### Frontend\n\nx\n")
 
 
 @case("a mirror without a frontmatter block is reported", present=["no frontmatter block"], code=1)
 def _(d):
-    p = d / "ru/tasks.md"
+    p = d / "uk/tasks.md"
     p.write_text(p.read_text().split("---\n", 2)[2])
 
 

@@ -3,7 +3,7 @@ type: tasks
 title: Orders CSV export
 feature: orders-csv-export
 lang: en
-mirror: ../ru/tasks.md
+mirror: ../uk/tasks.md
 status: draft
 owner: Alex Kim
 reviewers: [Sam Lee]

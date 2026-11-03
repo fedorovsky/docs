@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Check feature docs: each file on its own, every EN/RU pair, and each feature across its documents.
+"""Check feature docs: each file on its own, every EN/UK pair, and each feature across its documents.
 
 Docs live in per-language folders, and a mirror has the same path under the
-sibling language folder: `<feature>/en/prd.md` <-> `<feature>/ru/prd.md`.
+sibling language folder: `<feature>/en/prd.md` <-> `<feature>/uk/prd.md`.
 
 Usage:
     check_mirror.py PATH [PATH ...]
 
 PATH is a feature folder (or any folder above several), or one of its prd.md /
 spec.md / tasks.md files. Other Markdown files, and files outside an `en/` or
-`ru/` folder, are reported as ignored. Exit status: 0 all checks pass, 1 any
+`uk/` folder, are reported as ignored. Exit status: 0 all checks pass, 1 any
 check fails or a mirror is missing, 2 nothing was checked.
 
 Each file is checked on its own, mirror or not:
@@ -29,9 +29,9 @@ Each file is checked on its own, mirror or not:
 - no template scaffolding: <placeholders>, *(optional)* markers, YYYY-MM-DD,
   frontmatter comments.
 
-An EN/RU pair is compared structurally, since prose differs by language:
+An EN/UK pair is compared structurally, since prose differs by language:
 frontmatter (except title / lang / mirror), heading levels with sections paired
-by their position in the templates (Summary <-> Кратко), per section the list
+by their position in the templates (Summary <-> Коротко), per section the list
 items, checkbox states, table shapes and fenced blocks (byte-identical, except
 Mermaid, where node IDs, participants and arrows are compared and labels are
 ignored), and over the whole file the R/T/Q IDs, inline code and links.
@@ -52,7 +52,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-LANGS = ("en", "ru")
+LANGS = ("en", "uk")
 DOC_NAMES = ("prd", "spec", "tasks")
 STATUSES = ("draft", "review", "approved", "shipped", "deprecated")
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "assets" / "templates"
@@ -65,9 +65,9 @@ SIBLING_KEYS = {"prd": ("spec", "tasks"), "spec": ("prd", "tasks"), "tasks": ("p
 LANG_SPECIFIC_KEYS = {"title", "lang", "mirror"}
 
 # Sections whose tables hold requirement rows (| R1 | …), in both languages.
-REQUIREMENT_SECTIONS = {"Requirements", "Требования"}
-COVERAGE_SECTIONS = {"Requirements coverage", "Покрытие требований"}
-CONTEXT_SECTIONS = {"Context & current state", "Контекст и текущее состояние"}  # a Spec without a PRD defines its requirements here
+REQUIREMENT_SECTIONS = {"Requirements", "Вимоги"}
+COVERAGE_SECTIONS = {"Requirements coverage", "Покриття вимог"}
+CONTEXT_SECTIONS = {"Context & current state", "Контекст і поточний стан"}  # a Spec without a PRD defines its requirements here
 DEFINITION_SECTIONS = {"prd": REQUIREMENT_SECTIONS, "spec": CONTEXT_SECTIONS, "tasks": set()}
 COVERS_LABELS = {"setup", "verify", "rollout"}
 
@@ -87,19 +87,19 @@ HEAD_NO_DOT_RE = re.compile(HEAD_PREFIX + r"([TQ]\d+)(?![\d.])")
 TASK_DEF_RE = re.compile(r"^\s*[-*+]\s+\[[ xX]\]\s+(~{0,2})\*\*(T\d+)\.")
 # A requirement row; the text may be struck through, the ID too.
 ROW_RE = re.compile(r"^\s*\|\s*~{0,2}(R\d+)~{0,2}\s*\|(.*)$")
-DEPENDS_RE = re.compile(r"^\s*[-*+]\s+(?:Depends on|Зависит от):\s*(.*)$")
-BLOCKED_RE = re.compile(r"^\s*[-*+]\s+(?:Blocked by|Заблокировано):\s*(.*)$")
-COVERS_RE = re.compile(r"^\s*[-*+]\s+(?:Covers|Покрывает):\s*(.*)$")
+DEPENDS_RE = re.compile(r"^\s*[-*+]\s+(?:Depends on|Залежить від):\s*(.*)$")
+BLOCKED_RE = re.compile(r"^\s*[-*+]\s+(?:Blocked by|Заблоковано):\s*(.*)$")
+COVERS_RE = re.compile(r"^\s*[-*+]\s+(?:Covers|Покриває):\s*(.*)$")
 QUESTION_REF_RE = re.compile(r"\b(PRD|Spec) (Q\d+)\b")
-NOT_COVERED_RE = re.compile(r"^\s*\*\*(?:Not covered|Не покрыто):\*\*")
+NOT_COVERED_RE = re.compile(r"^\s*\*\*(?:Not covered|Не покрито):\*\*")
 # Template scaffolding that must not survive into a real document.
 HTML_RE = re.compile(
     r"<!--.*?-->|</?(?:br|hr|b|i|u|em|strong|code|kbd|sub|sup|span|div|p|a|img|details|summary|table|thead|tbody|tr|td|th|ul|ol|li|small|mark|del|ins|s)(?:\s[^<>]*)?/?>",
     re.I,
 )
-PLACEHOLDER_RE = re.compile(r"<[A-Za-zА-Яа-яЁё…][^<>\n]{0,199}>")
-OPTIONAL_MARK_RE = re.compile(r"\*\((?:optional|необязательно)\)\*")
-OPTIONAL_SUFFIX_RE = re.compile(r"\s*\*\((?:optional|необязательно)\)\*\s*$")
+PLACEHOLDER_RE = re.compile(r"<[A-Za-zА-Яа-яІіЇїЄєҐґ…][^<>\n]{0,199}>")
+OPTIONAL_MARK_RE = re.compile(r"\*\((?:optional|необов[’'ʼ]язково)\)\*")
+OPTIONAL_SUFFIX_RE = re.compile(r"\s*\*\((?:optional|необов[’'ʼ]язково)\)\*\s*$")
 # Mermaid: what carries a label (translated) as opposed to structure (identical).
 MERMAID_LABEL_RE = re.compile(r'"[^"]*"|\[[^\]]*\]|\{[^}]*\}|\([^)]*\)|\|[^|]*\||:.*$|\bas\b.*$')
 MERMAID_EDGE_TEXT_RE = re.compile(r"--\s+.*?\s+-->")
@@ -502,30 +502,30 @@ def lint_scaffolding(doc):
 
 # --- pair checks -------------------------------------------------------------
 
-def compare(en: Path, ru: Path):
+def compare(en: Path, uk: Path):
     """Structural differences between a document and its mirror (each file's own checks are reported separately)."""
-    a, b = parse(en), parse(ru)
+    a, b = parse(en), parse(uk)
     issues = []
 
     fa, fb = a["frontmatter"], b["frontmatter"]
     if set(fa) != set(fb):
-        issues.append(f"frontmatter keys differ: only EN {sorted(set(fa) - set(fb))}, only RU {sorted(set(fb) - set(fa))}")
+        issues.append(f"frontmatter keys differ: only EN {sorted(set(fa) - set(fb))}, only UK {sorted(set(fb) - set(fa))}")
     for key in sorted(set(fa) & set(fb) - LANG_SPECIFIC_KEYS):
         if fa[key] != fb[key]:
-            issues.append(f"frontmatter '{key}' differs: EN {fa[key]!r} vs RU {fb[key]!r}")
+            issues.append(f"frontmatter '{key}' differs: EN {fa[key]!r} vs UK {fb[key]!r}")
 
     la, lb = [l for l, _, _ in a["headings"]], [l for l, _, _ in b["headings"]]
     if la != lb:
-        issues.append(f"heading structure differs: EN {len(la)} headings {la} vs RU {len(lb)} {lb}")
+        issues.append(f"heading structure differs: EN {len(la)} headings {la} vs UK {len(lb)} {lb}")
     else:
-        ta, tb = template_headings("en", en.stem), template_headings("ru", ru.stem)
+        ta, tb = template_headings("en", en.stem), template_headings("uk", uk.stem)
         if ta and tb and len(ta) == len(tb):
             pos_a = {(l, t): i for i, (l, t, _) in enumerate(ta)}
             pos_b = {(l, t): i for i, (l, t, _) in enumerate(tb)}
             for (l, xa, _), (_, xb, _) in zip(a["headings"], b["headings"]):
                 if l > 1 and pos_a.get((l, xa), -1) != pos_b.get((l, xb), -1):
                     want = [t for (ll, t), i in pos_b.items() if i == pos_a.get((l, xa), -2)]
-                    issues.append(f"headings don't pair up: EN '{xa}' vs RU '{xb}'" + (f" (the RU template's heading here is '{want[0]}')" if want else ""))
+                    issues.append(f"headings don't pair up: EN '{xa}' vs UK '{xb}'" + (f" (the UK template's heading here is '{want[0]}')" if want else ""))
 
     for sa, sb in zip(a["sections"], b["sections"]):
         where = f"section '{sa['title']}' / '{sb['title']}'"
@@ -542,13 +542,13 @@ def compare(en: Path, ru: Path):
             issues.append(f"{where}: fenced blocks (lang, lines, digest) {sa['fences']} vs {sb['fences']}; {note}")
 
     if a["ids"] != b["ids"]:
-        issues.append(f"IDs (R/T/Q): only EN {sorted(a['ids'] - b['ids'])}, only RU {sorted(b['ids'] - a['ids'])}")
+        issues.append(f"IDs (R/T/Q): only EN {sorted(a['ids'] - b['ids'])}, only UK {sorted(b['ids'] - a['ids'])}")
     if a["code"] != b["code"]:
         only_en = sorted((a["code"] - b["code"]).elements())
-        only_ru = sorted((b["code"] - a["code"]).elements())
-        issues.append(f"inline code differs (identifiers must not be translated): only EN {only_en}, only RU {only_ru}")
+        only_uk = sorted((b["code"] - a["code"]).elements())
+        issues.append(f"inline code differs (identifiers must not be translated): only EN {only_en}, only UK {only_uk}")
     if a["links"] != b["links"]:
-        issues.append(f"links differ: EN {a['links']} vs RU {b['links']}")
+        issues.append(f"links differ: EN {a['links']} vs UK {b['links']}")
     return issues
 
 
@@ -655,7 +655,7 @@ def collect(paths):
         for f in candidates:
             lang, _ = lang_of(f)
             if lang is None or f.stem not in DOC_NAMES:
-                notes.append(f"ignored: {f} (not a prd.md / spec.md / tasks.md inside an en/ or ru/ folder)")
+                notes.append(f"ignored: {f} (not a prd.md / spec.md / tasks.md inside an en/ or uk/ folder)")
             else:
                 files.add(f)
     return sorted(files), notes, missing
@@ -705,8 +705,8 @@ def main(argv):
         if pair not in seen:
             seen.add(pair)
             pairs.append(pair)
-    for en, ru in pairs:
-        failed |= report(f"{en} <-> {ru}", guarded(compare, en, ru))
+    for en, uk in pairs:
+        failed |= report(f"{en} <-> {uk}", guarded(compare, en, uk))
 
     features = {}
     for f in files:

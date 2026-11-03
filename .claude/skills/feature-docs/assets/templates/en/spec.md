@@ -3,7 +3,7 @@ type: spec
 title: <Feature name>
 feature: <feature-slug>
 lang: en
-mirror: ../ru/spec.md
+mirror: ../uk/spec.md
 status: draft            # draft | review | approved | shipped | deprecated
 owner: <name>
 reviewers: []
