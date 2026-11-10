@@ -2,5 +2,4 @@
 .DS_Store
 *-workspace/
 .claude/settings.local.json
-.claude/skills/*/evals/results/
 __pycache__/
