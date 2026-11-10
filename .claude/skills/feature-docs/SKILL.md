@@ -43,9 +43,9 @@ The project is the codebase the feature belongs to; in a monorepo, the package o
 
 | Request | Do |
 |---|---|
-| New PRD | The usual start, and what a request that names no document means ("describe the feature"): the Spec and the tasks are offered in the hand-over, not written unasked. |
+| Full set | The default, and what a request that names no document means ("describe the feature", "write the docs"): PRD, then Spec, then Tasks, each from the previous one, in one pass. No review stop between them unless asked. |
+| New PRD | Only when the request asks for the PRD and nothing else: the Spec and the tasks are offered in the hand-over. |
 | New Spec | Read the PRD first. Without one, offer a short PRD; if declined, write the Spec without the `prd:` key, with the problem and a requirements table (`R1…`, same columns as the PRD's) under *Context & current state*; *Requirements coverage* and the tasks refer to those rows. |
-| Several at once | PRD, then Spec, then Tasks, each from the previous one, in one pass. No review stop between them unless asked. |
 | Tasks | Read the Spec and the PRD, then write `tasks.md` (see *Tasks*). No Spec means write the Spec first. A `draft` Spec means the tasks may change with it: say so. |
 | Implement | See *Working through tasks*. |
 | Update | Run the mirror check first and resolve an out-of-sync pair before editing (see `references/mirror.md`). Edit both languages in one pass, bump `updated`, keep IDs stable. A Spec change pulls `tasks.md` along (see *Tasks*). |
